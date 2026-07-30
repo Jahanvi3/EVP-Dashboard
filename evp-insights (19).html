@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Altudo · EVP Insights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Mulish:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --display: 'Fraunces', Georgia, serif;
+    --body: 'Mulish', -apple-system, BlinkMacSystemFont, sans-serif;
+    --bg: #f5f1e8;
+    --cream: #fbf8f1;
+    --surface: #ffffff;
+    --ink: #1e2a3a;
+    --ink-soft: #4a5363;
+    --ink-faint: #8a8f99;
+    --line: #e8e1d4;
+    --accent: #3b6e58;
+    --accent-tint: #e6efe9;
+    --accent-line: #c4d8c9;
+    --ok: #5a8a5e; --ok-ink: #3a6b3e; --ok-tint: #ecf2ec; --ok-line: #cbdccc;
+    --warn: #c08a3e; --warn-ink: #8a6020; --warn-tint: #f6eddd;
+    --flag: #b8623f; --flag-ink: #96482a; --flag-line: #e6c4b4; --flag-tint: #f8ebe4;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); font-family: var(--body); color: var(--ink-soft); }
+  button { font-family: var(--body); cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  .hidden { display: none !important; }
+
+  .pub-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    padding: 18px clamp(20px, 5vw, 48px); border-bottom: 1px solid var(--line); background: var(--surface);
+    position: sticky; top: 0; z-index: 30; }
+  .brand { display: flex; gap: 11px; align-items: center; }
+  .brand-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--accent);
+    color: #fff; display: grid; place-items: center; font-family: var(--display); font-weight: 700; }
+  .brand-name { font-family: var(--display); font-weight: 700; font-size: 16px; color: var(--ink); }
+  .brand-sub { font-size: 12px; color: var(--ink-faint); }
+  .hdr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 9px;
+    padding: 8px 14px; font-size: 13px; font-weight: 700; }
+  .btn:hover { border-color: var(--accent-line); background: var(--accent-tint); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #315c4a; }
+  .btn.ghost { background: transparent; }
+  .btn.small { padding: 5px 10px; font-size: 12px; border-radius: 7px; }
+
+  main { max-width: 1180px; margin: 0 auto; padding: clamp(22px, 4vw, 40px) clamp(16px, 4vw, 36px) 90px; }
+
+  .page-title { font-family: var(--display); font-size: clamp(26px, 4vw, 36px); color: var(--ink);
+    font-weight: 600; margin: 6px 0 6px; letter-spacing: -0.01em; }
+  .page-lede { font-size: 14px; color: var(--ink-soft); max-width: 720px; line-height: 1.6; margin: 0 0 8px; }
+  .data-meta { font-size: 12.5px; color: var(--ink-faint); margin-bottom: 24px; }
+  .data-meta b { color: var(--accent); font-weight: 700; }
+
+  .empty-card { background: var(--cream); border: 1px dashed var(--accent-line); border-radius: 16px;
+    padding: 40px 30px; text-align: center; margin-top: 26px; }
+  .empty-card h2 { font-family: var(--display); color: var(--ink); font-weight: 600; margin: 0 0 8px; font-size: 22px; }
+  .empty-card p { max-width: 560px; margin: 0 auto 18px; font-size: 14px; line-height: 1.65; }
+
+  .section { margin-top: 40px; }
+  .section-eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800;
+    color: var(--accent); margin-bottom: 4px; }
+  .section-title { font-family: var(--display); font-size: 21px; color: var(--ink); font-weight: 600; margin: 0 0 4px; }
+  .section-sub { font-size: 13px; color: var(--ink-faint); margin: 0 0 16px; max-width: 720px; line-height: 1.55; }
+
+  /* KPI row */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 22px; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .kpi .k-label { font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 800; color: var(--ink-faint); }
+  .kpi .k-value { font-family: var(--display); font-size: 32px; font-weight: 600; color: var(--ink); margin: 6px 0 2px; }
+  .kpi .k-value small { font-size: 16px; color: var(--ink-faint); font-family: var(--body); font-weight: 600; }
+  .kpi .k-note { font-size: 12px; color: var(--ink-soft); line-height: 1.45; }
+  .kpi.tone-ok { border-color: var(--ok-line); background: linear-gradient(180deg, var(--ok-tint), var(--surface)); }
+  .kpi.tone-warn { border-color: #ecd9ba; background: linear-gradient(180deg, var(--warn-tint), var(--surface)); }
+  .kpi.tone-flag { border-color: var(--flag-line); background: linear-gradient(180deg, var(--flag-tint), var(--surface)); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  .grid-2 { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* pillar scorecards */
+  .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .pillar-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .pillar-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .pillar-name { font-family: var(--display); font-weight: 600; font-size: 16px; color: var(--ink); }
+  .pillar-sat { font-family: var(--display); font-weight: 700; font-size: 22px; }
+  .pillar-meta { font-size: 12px; color: var(--ink-faint); margin-bottom: 10px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-faint); margin-top: 5px; }
+  .bar-track { flex: 1; height: 7px; border-radius: 4px; background: var(--bg); overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .dist { display: flex; gap: 2px; align-items: flex-end; height: 34px; margin-top: 10px; }
+  .dist span { flex: 1; background: var(--accent-line); border-radius: 2px 2px 0 0; min-height: 2px; }
+  .dist span.low { background: var(--flag-line); }
+  .dist-x { display: flex; justify-content: space-between; font-size: 10px; color: var(--ink-faint); margin-top: 3px; }
+
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700;
+    border-radius: 999px; padding: 3px 10px; border: 1px solid var(--line); background: var(--cream); color: var(--ink-soft); }
+  .chip.flag { background: var(--flag-tint); border-color: var(--flag-line); color: var(--flag-ink); }
+  .chip.warn { background: var(--warn-tint); border-color: #ecd9ba; color: var(--warn-ink); }
+  .chip.ok { background: var(--ok-tint); border-color: var(--ok-line); color: var(--ok-ink); }
+
+  /* heatmap */
+  .heat-wrap { overflow-x: auto; }
+  table.heat { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 12.5px; }
+  table.heat th, table.heat td { padding: 8px 10px; text-align: center; border: 1px solid var(--line); }
+  table.heat th { background: var(--cream); color: var(--ink); font-weight: 700; font-size: 12px; }
+  table.heat td.rowhead { text-align: left; background: var(--cream); font-weight: 700; color: var(--ink); white-space: nowrap; }
+  table.heat td .hm-n { display: block; font-size: 10px; color: rgba(30,42,58,.55); font-weight: 600; }
+
+  /* generic tables */
+  table.data { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.data th { text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint);
+    border-bottom: 2px solid var(--line); padding: 8px 10px; }
+  table.data td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.data tr:last-child td { border-bottom: 0; }
+  table.data td b { color: var(--ink); }
+
+  /* narrative */
+  .narrative { background: var(--cream); border: 1px solid var(--accent-line); border-radius: 16px; padding: 22px 24px; }
+  .narrative ol { margin: 0; padding-left: 20px; display: grid; gap: 12px; }
+  .narrative li { font-size: 14px; line-height: 1.65; color: var(--ink-soft); }
+  .narrative li b { color: var(--ink); }
+  .narrative li .tag { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    border-radius: 5px; padding: 2px 7px; margin-right: 7px; }
+  .tag.fix { background: var(--flag-tint); color: var(--flag-ink); }
+  .tag.watch { background: var(--warn-tint); color: var(--warn-ink); }
+  .tag.protect { background: var(--ok-tint); color: var(--ok-ink); }
+  .tag.act { background: var(--accent-tint); color: var(--accent); }
+
+  /* comments */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+  .filters select, .filters input[type=search] { font-family: var(--body); font-size: 13px; border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 10px; background: var(--surface); color: var(--ink); }
+  .theme-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+  .theme-chips .chip { cursor: pointer; user-select: none; }
+  .theme-chips .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .comment { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: var(--surface); }
+  .comment .c-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 12px; color: var(--ink-faint); }
+  .comment .c-top b { color: var(--ink); font-size: 13px; }
+  .comment .c-body { font-size: 13.5px; line-height: 1.6; color: var(--ink-soft); }
+  .load-more { text-align: center; margin-top: 8px; }
+
+  /* modal */
+  .modal-scrim { position: fixed; inset: 0; background: rgba(30,42,58,.45); display: grid; place-items: center; z-index: 60; padding: 18px; }
+  .modal { background: var(--surface); border-radius: 16px; max-width: 640px; width: 100%; max-height: 88vh; overflow: auto; padding: 24px; }
+  .modal h3 { font-family: var(--display); color: var(--ink); font-weight: 600; margin: 0 0 6px; }
+  .modal p { font-size: 13px; line-height: 1.6; }
+  .modal textarea { width: 100%; min-height: 140px; border: 1px solid var(--line); border-radius: 10px; padding: 10px;
+    font-family: ui-monospace, monospace; font-size: 12px; color: var(--ink); }
+  .drop { border: 2px dashed var(--accent-line); border-radius: 12px; padding: 26px; text-align: center; background: var(--cream);
+    font-size: 13px; margin: 12px 0; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+
+  .hdr-search { position: relative; }
+  .hdr-search input { width: min(300px, 42vw); border: 1px solid var(--line); border-radius: 9px;
+    padding: 8px 12px; font-family: var(--body); font-size: 13px; background: var(--cream); color: var(--ink); }
+  .hdr-search input:focus { background: #fff; }
+  .hdr-suggest { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(30,42,58,.14);
+    max-height: 340px; overflow: auto; z-index: 50; }
+  .hdr-suggest .sg { display: flex; justify-content: space-between; gap: 8px; align-items: center;
+    padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--line); }
+  .hdr-suggest .sg:last-child { border-bottom: 0; }
+  .hdr-suggest .sg:hover, .hdr-suggest .sg.active { background: var(--accent-tint); }
+  .hdr-suggest .sg .sg-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .hdr-suggest .sg .sg-sub { font-size: 11px; color: var(--ink-faint); }
+  .foot-note { margin-top: 50px; text-align: center; font-size: 12px; color: var(--ink-faint); }
+  svg text { font-family: var(--body); }
+  .svg-wrap { width: 100%; }
+  .svg-wrap svg { width: 100%; height: auto; display: block; }
+  @media print { .pub-header .hdr-actions, .filters, .load-more { display: none; } body { background: #fff; } }
+</style>
+</head>
+<body>
+<header class="pub-header">
+  <div class="brand">
+    <div class="brand-mark">A</div>
+    <div>
+      <div class="brand-name">Altudo · EVP Insights</div>
+      <div class="brand-sub">Leadership dashboard for the EVP Check-In</div>
+    </div>
+  </div>
+  <div class="hdr-actions">
+    <div class="hdr-search">
+      <input type="search" id="globalSearch" placeholder="Search employee…" autocomplete="off">
+      <div class="hdr-suggest hidden" id="globalSuggest"></div>
+    </div>
+    <button class="btn primary" id="btnSync">Sync from Excel</button>
+    <button class="btn ghost" id="btnPrint" title="Print / save as PDF">Print</button>
+  </div>
+</header>
+<main id="app"></main>
+<div id="modalRoot"></div>
+<script>
+"use strict";
+/* ============================================================
+   Altudo EVP Insights — companion analytics dashboard for the
+   EVP Check-In. Reads the same submission shape the check-in
+   produces ({ ranks, sat, comments } across six pillars) and
+   turns it into leadership-ready insight.
+   ============================================================ */
+
+const PILLARS = [
+  { key: "career",   label: "Career",         desc: "Path, level and promotion opportunities" },
+  { key: "learning", label: "Learning",       desc: "Training and developmental feedback" },
+  { key: "people",   label: "People",         desc: "Leaders, peers and reportees" },
+  { key: "culture",  label: "Culture",        desc: "Core values and the environment they create" },
+  { key: "rewards",  label: "Rewards",        desc: "Pay, benefits and recognition" },
+  { key: "work",     label: "Clients & Work", desc: "The work itself, its demands and fit" },
+];
+const PKEYS = PILLARS.map(p => p.key);
+const PLABEL = Object.fromEntries(PILLARS.map(p => [p.key, p.label]));
+
+/* Roster embedded from roster.json: [email, name, role, mentor, mentorEmail] */
+const ROSTER_RAW = [["amit.kumar@altudo.co","Amit Kumar","Junior Associate","Abhinav Srivastav","abhinav.srivastav@altudo.co","3",0],["kumar.siddhant@altudo.co","Kumar Siddhant","Associate","Abhinaya Srinivasan","abhinaya.srinivasan@altudo.co","4",0],["kalaivani.r@altudo.co","Kalaivani R","Manager","Abhinaya Srinivasan","abhinaya.srinivasan@altudo.co","4",1],["ashish.kulshrestha@altudo.co","Ashish Kulshrestha","Senior Associate","Abhinaya Srinivasan","abhinaya.srinivasan@altudo.co","5",0],["aashutosh.anand@altudo.co","Aashutosh Anand","Junior Associate","Abhinaya Srinivasan","abhinaya.srinivasan@altudo.co","Probation",0],["dolly@altudo.co","Dolly","Senior Manager","Abhinaya Srinivasan","abhinaya.srinivasan@altudo.co","3",0],["ridit.gupta@altudo.co","Ridit Gupta","Trainee","Abhinaya Srinivasan","abhinaya.srinivasan@altudo.co","",0],["abhyuday.chaturvedi@altudo.co","Abhyuday Chaturvedi","Associate","Ajit Kumar","ajit.kumar@altudo.co","5",1],["parag.maru@altudo.co","Maru Parag","Senior Associate","Ajit Kumar","ajit.kumar@altudo.co","Probation",0],["abhi.mandloi@altudo.co","Abhi Mandloi","Junior Associate","Ajit Kumar","ajit.kumar@altudo.co","Confirmed",0],["utkarsh.sehgal@altudo.co","Utkarsh Sehgal","Junior Associate","Ajit Kumar","ajit.kumar@altudo.co","Confirmed",0],["mukund.agarwal@altudo.co","Mukund Agarwal","Associate","Ajit kumar","ajit.kumar@altudo.co","Probation",0],["tushar.singh@altudo.co","Tushar Singh","Senior Associate","Ajit Verma","ajit.verma@altudo.co","3",0],["bhuvan.s@altudo.co","Bhuvan S","Senior Associate","Ajit Verma","ajit.verma@altudo.co","3",1],["jeetendra.sahu@altudo.co","Jeetendra Sahu","Senior Associate","Ajit Verma","ajit.verma@altudo.co","3",0],["b.sukanya@altudo.co","B Sukanya","Associate","Aman Malhotra","aman.malhotra@altudo.co","Probation",0],["sanchit.das@altudo.co","Sanchit Das","Junior Associate","Aman Malhotra","aman.malhotra@altudo.co","Confirmed",0],["anirudh.verma@altudo.co","Anirudh Verma","Trainee","Amol Kailas Shinde","Amol.Shinde@altudo.co","Probation",0],["aditya.srivastava@altudo.co","Aditya Srivastava","Junior Associate","Amol Kailas Shinde","Amol.Shinde@altudo.co","Confirmed",0],["chitransh.jain@altudo.co","Chitransh .","Junior Associate","Amuthan S","amuthan.s@altudo.co","Confirmed",0],["jinal.shah@altudo.co","Jinal Shah","Senior Associate","Amuthan S","amuthan.s@altudo.co","4",0],["santosh.tiwari@altudo.co","Santosh Tiwari","Senior Associate","Amuthan S","amuthan.s@altudo.co","3",0],["navya.mallepalli@altudo.co","Navya Mallepalli","Lead","Anil Kumar Mall","anil.mall@altudo.co","5",1],["chandan.m@altudo.co","Chandan M","Associate","Anil Kumar Mall","anil.mall@altudo.co","3",0],["kirti.kumar@altudo.co","Kirti Kumar","Associate Architect","Anil Kumar Mall","anil.mall@altudo.co","3",0],["kavya.bankapur@altudo.co","Kavya Bankapur","Associate Lead","Anil Kumar Mall","anil.mall@altudo.co","4",0],["aditya.gabhane@altudo.co","Aditya Gabhane","Senior Associate","Ankit Saxena","ankit.saxena@altudo.co","4",0],["anoop.mishra@altudo.co","Anoop Mishra","Senior Associate","Ankit Saxena","ankit.saxena@altudo.co","3",0],["mohit.goel@altudo.co","Mohit Goel","Senior Associate","Ankit Saxena","ankit.saxena@altudo.co","3",0],["tim.butler@altudo.co","Timothy John Butler","Senior Director","Ankit Sethi","ankit.sethi@altudo.co","4",0],["ankita.raj@altudo.co","Ankita Raj","Junior Associate","Ankita Sharma","Ankita.Sharma@altudo.co","Confirmed",0],["sakshi.gupta@altudo.co","Sakshi Gupta","Junior Associate","Ankita Sharma","Ankita.Sharma@altudo.co","Confirmed",0],["shivain.gupta@altudo.co","Shivain Kumar Gupta","Trainee","Ankur Arya","ankur.arya@altudo.co","",0],["vishwa.bhushan@altudo.co","Vishwa Bhushan","Senior Manager","Ankush Bansal","ankush.bansal@altudo.co","5",1],["shaddy.saif@altudo.co","Shaddy Mohamed Saif","Senior Solution Consultant","Ankush Bansal","ankush.bansal@altudo.co","4",0],["anudeep.chikka@altudo.co","Anudeep Chikka","Lead","Ankush Bansal","ankush.bansal@altudo.co","5",0],["rohit.kumar@altudo.co","Rohit Kumar","Associate Lead","Ankush Bansal","ankush.bansal@altudo.co","4",1],["sakshi.aggarwal@altudo.co","Sakshi Aggarwal","Associate Lead","Ankush Bansal","ankush.bansal@altudo.co","Mat Leave",0],["rohit.saini@altudo.co","Rohit Saini","Lead","Ankush Bansal","ankush.bansal@altudo.co","4",1],["ankit.saxena@altudo.co","Ankit Saxena","Lead","Ankush Bansal","ankush.bansal@altudo.co","3",0],["alexander.darrington@altudo.co","Darrington Alexander","Solution Consultant","Ankush Bansal","ankush.bansal@altudo.co","",0],["sarvesh.kumar@altudo.co","Sarvesh Kumar","Junior Associate","Anoop Mishra","anoop.mishra@altudo.co","Confirmed",0],["ankita.sharma@altudo.co","Ankita Sharma","Senior Associate","Anudeep Chikka","anudeep.chikka@altudo.co","4",0],["kumar.vinay@altudo.co","Namala Vinay Kumar","Senior Associate","Anudeep Chikka","anudeep.chikka@altudo.co","3",0],["preetam.anand@altudo.co","Preetam Anand","Associate Lead","Anudeep Chikka","anudeep.chikka@altudo.co","5",0],["dhruv@altudo.co","Dhruv","Junior Associate","Anurag Singh","anurag.singh@altudo.co","Probation",0],["ayushi.garg@altudo.co","Ayushi Garg","Associate","Anuriti Sharma","anuriti.sharma@altudo.co","4",0],["ayushi.malik@altudo.co","Ayushi Malik","Senior Associate","Anuriti Sharma","anuriti.sharma@altudo.co","3",0],["paurush.j@altudo.co","Paurush Jhamb","Senior Associate","Anuriti Sharma","anuriti.sharma@altudo.co","5",0],["rajat.mishra@altudo.co","Rajat Mishra","Associate Manager","Archana Saini","archana.saini@altudo.co","Probation",0],["kamal.bora@altudo.co","Kamal Singh Bora","Lead","Archana Saini","archana.saini@altudo.co","Probation",0],["sreenivasa.reddy@altudo.co","Sreenivasa Reddy","Senior Associate","Archana Saini","archana.saini@altudo.co","3",0],["eugansh.khatri@altudo.co","Eugansh Khatri","Manager","Archit Garg","archit.garg@altudo.co","",0],["gaurav.jain@altudo.co","Gaurav Jain","Associate Director","Archit Garg","archit.garg@altudo.co","Probation",0],["bhumika.bihani@altudo.co","Bhumika Bihani","Associate","Arun Pradeepan","arun.pradeepan@altudo.co","3",0],["austin@altudo.co","Atul Pundir","Junior Associate","Ashwaith Dhareshwar","ashton@altudo.co","Converted",0],["timothy@altudo.co","Tathagat Raj","Sales Development Representative","Ashwaith Dhareshwar","ashton@altudo.co","",0],["kate@altudo.co","Khushi Goswami","Junior Sales Development Representative","Ashwaith Dhareshwar","ashton@altudo.co","Converted",0],["ross@altudo.co","Ritik Bhardwaj","Sales Development Representative","Ashwaith Dhareshwar","ashton@altudo.co","Probation",0],["jahanvi.batra@altudo.co","Jahanvi Batra","Junior Associate","Ayushi Taneja","ayushi.taneja@altudo.co","5",0],["sneha.yadav@altudo.co","Sneha Yadav","Senior Associate","Azar Safarov","azar.safarov@altudo.co","3",0],["kartik.singh@altudo.co","Kartik Singh","Lead","Azar Safarov","azar.safarov@altudo.co","3",0],["syed.mohammed@altudo.co","Syed Mohammed","Lead","Azar Safarov","azar.safarov@altudo.co","3",0],["shubham.kumar@altudo.co","Shubham Kumar","Associate","Bobal Kapoor","bobal.kapoor@altudo.co","4",0],["gopal.sharma@altudo.co","Gopal Sharma","Trainee","Bobal Kapoor","bobal.kapoor@altudo.co","",0],["pratham.marwah@altudo.co","Pratham Marwah","Junior Associate","Bobal Kapoor","bobal.kapoor@altudo.co","Probation",0],["simranjeet.singh@altudo.co","Simranjeet Singh","Trainee","Bobal Kapoor","bobal.kapoor@altudo.co","",0],["harsh.verma@altudo.co","Harsh Verma","Junior Associate","Bobby Kumar","bobby.kumar@altudo.co","Confirmed",0],["tanmayi.doddapaneni@altudo.co","Doddapaneni Tanmayi","Associate","Chaitya Shah","shah.chaitya@altudo.co","4",0],["md.fazal@altudo.co","Md Fazal","Associate","Chaitya Shah","shah.chaitya@altudo.co","3",0],["parth.vyas@altudo.co","Parth Vyas","Associate","Chaitya Shah","shah.chaitya@altudo.co","4",0],["sohit.wankhade@altudo.co","Sohit Wankhade","Associate","Chaitya Shah","shah.chaitya@altudo.co","3",0],["swaroop@altudo.co","Swaroop Muraleedharan","Senior Associate","Chaitya Shah","shah.chaitya@altudo.co","4",0],["himani.kalia@altudo.co","Himani Kalia","Director","Chase Thompson","chase.thompson@altudo.co","Mat Leave",0],["vishal.panchal@altudo.co","Vishal Panchal","Vice President","David San Filippo","david.sanfilippo@altudo.co","Probation",0],["radoj.glisik@altudo.co","Radoj Glisik","Senior Vice President","David San Filippo","david.sanfilippo@altudo.co","4",0],["matt.vandermolen@altudo.co","Matthew Vandermolen","Vice President","David San Filippo","david.sanfilippo@altudo.co","4",0],["abiraj.singh@altudo.co","Abiraj Singh","Junior Associate","Deepak Kumar","kumar.deepak@altudo.co","Confirmed",0],["yash.gupta@altudo.co","Yash Gupta","Associate","Deepak Kumar","kumar.deepak@altudo.co","4",0],["bobby.kumar@altudo.co","Bobby Kumar","Associate","Deepika Merai","Deepika.merai@altudo.co","4",0],["akilash.sageendran@altudo.co","Akilash Sageendran","Senior Associate","Deepika Merai","Deepika.merai@altudo.co","4",1],["kishor.kumar@altudo.co","Kishor Kumar SN","Senior Associate","Deepika Merai","Deepika.merai@altudo.co","4",0],["arya.s@altudo.co","Arya S J","Senior Associate","Dolly","dolly@altudo.co","3",0],["gaurav.chauhan@altudo.co","Gaurav Chauhan","Lead","Dolly","dolly@altudo.co","3",0],["mehta.sahil@altudo.co","Sahil Mehta","Associate","Ganesh Sonawane","Ganesh.sonawane@altudo.co","5",0],["aditya.jha@altudo.co","Aditya Kumar Jha","Junior Associate","Ganesh Sonawane","Ganesh.sonawane@altudo.co","Confirmed",0],["ritu.yadav@altudo.co","Ritu Yadav","Junior Associate","Ganesh Sonawane","Ganesh.sonawane@altudo.co","3",0],["sumeet.kaur@altudo.co","Sumeet Kaur","Junior Associate","Ganesh Sonawane","Ganesh.sonawane@altudo.co","Confirmed",0],["naresh.thogiti@altudo.co","Thogiti Naresh","Lead","Gaurav Arora","gaurav.arora@altudo.co","Probation",0],["biswajit.sahu@altudo.co","Biswajit Sahu","Associate Lead","Gaurav Arora","gaurav.arora@altudo.co","4",0],["brijesh.singh@altudo.co","Brijesh Singh","Senior Associate","Gaurav Arora","gaurav.arora@altudo.co","4",0],["chaitanya.bhoopani@altudo.co","Chaithanya Bhoopani","Senior Associate","Gaurav Arora","gaurav.arora@altudo.co","3",0],["sunaina.kalucha@altudo.co","Sunaina Kalucha","Associate Lead","Gaurav Arora","gaurav.arora@altudo.co","3",0],["shan.mohammad@altudo.co","Shan Mohammad","Senior Associate","Gaurav Arora","gaurav.arora@altudo.co","4",0],["sweeta.das@altudo.co","Sweeta Das","Associate Lead","Gaurav Jain","gaurav.jain@altudo.co","5",0],["emily@altudo.co","Yashi Sharma","Senior Sales Development Representative","Gaurav Jain","gaurav.jain@altudo.co","4",0],["ashton@altudo.co","Ashwaith Dhareshwar","Manager Sales Development Representative","Gaurav Jain","gaurav.jain@altudo.co","4",1],["sarah.williams@altudo.co","Priyanka Kumari","Associate Manager Sales Development Representative","Gaurav Jain","gaurav.jain@altudo.co","4",0],["vince@altudo.co","Sanjeev Kumar","Lead Sales Development Representative","Gaurav Jain","gaurav.jain@altudo.co","3",0],["jagmeet.kaur@altudo.co","Jagmeet Kaur","Associate Architect","Gobinath Sami Nathan","gobinath.saminathan@altudo.co","5",1],["bhupender.kumar@altudo.co","Bhupender Kumar","Associate Lead","Gunjan Arora","gunjan.arora@altudo.co","4",0],["vikash.choudhary@altudo.co","Vikash Choudhary","Associate Director","Harmeet Singh","harmeet.singh@altudo.co","3",0],["tej.mishra@altudo.co","Tej Swaroop Mishra","Associate Lead","Harmeet Singh","harmeet.singh@altudo.co","3",0],["piyush.vaishnav@altudo.co","Piyush Vaishnav","Associate Manager","Harmeet Singh","harmeet.singh@altudo.co","4",0],["shilpa.gupta@altudo.co","Shilpa Gupta","Senior Manager","Harmeet Singh","harmeet.singh@altudo.co","3",0],["srinath.k@altudo.co","Srinath Kotha","Manager","Harsha Teja","Harsha.teja@altudo.co","4",0],["himanshu.singh@altudo.co","Himanshu Singh","Senior Associate","Harsha Teja","Harsha.teja@altudo.co","4",1],["mantsha.khatoon@altudo.co","Mantsha Khatoon","Associate","Harshit Makhecha","Harshit.makhecha@altudo.co","3",0],["sanchi.yadav@altudo.co","Sanchi Yadav","Senior Associate","Himani Kalia","chase.thompson@altudo.co","Probation",0],["rahul.nayak@altudo.co","Rahul Ranjan Nayak","Senior Associate","Himani Kalia","himani.kalia@altudo.co","4",1],["deepankar.singh@altudo.co","Deepankar Singh","Senior Associate","Jagmeet Kaur","jagmeet.kaur@altudo.co","4",1],["puneet.garg@altudo.co","Puneet Garg","Associate Architect","Janaka Fernando","janaka.fernando@altudo.co","3",1],["gobinath.saminathan@altudo.co","Gobinath Sami Nathan","Architect","Janaka Fernando","janaka.fernando@altudo.co","4",1],["shefali.gupta@altudo.co","Shefali Gupta","Associate Manager","Jayram Choudhary","jayram.choudhary@altudo.co","",0],["anurag.singh@altudo.co","Anurag Singh","Junior Associate","Jayram Choudhary","jayram.choudhary@altudo.co","3",0],["accounts@altudo.co","Sakshi","Manager","Jayram Choudhary","jayram.choudhary@altudo.co","2",0],["aman.dhanai@altudo.co","Aman Dhanai","Senior Associate","Jayram Choudhary","jayram.choudhary@altudo.co","3",0],["bobal.kapoor@altudo.co","Bobal Kapoor","Senior Manager","Jayram Choudhary","jayram.choudhary@altudo.co","4",0],["sanjay.vashist@altudo.co","Sanjay Vashist","Senior Manager","Jayram Choudhary","jayram.choudhary@altudo.co","5",1],["abhinaya.srinivasan@altudo.co","Abhinaya Srinivasan","Senior Manager","Jayram Choudhary","jayram.choudhary@altudo.co","5",1],["jitender@altudo.co","Jitender","Senior Associate","Jayram Choudhary","jayram.choudhary@altudo.co","3",0],["paramkusham.sinduja@altudo.co","Paramkusham Sinduja","Associate","Jinal Shah","jinal.shah@altudo.co","3",0],["himanshu.uniyal@altudo.co","Himanshu Uniyal","Junior Associate","Jinal Shah","jinal.shah@altudo.co","Confirmed",0],["azar.safarov@altudo.co","Azar Safarov","Architect","Jonathan Lane","jonathan.lane@altudo.co","4",1],["nitesh.verma@altudo.co","Nitesh Kumar Verma","Senior Architect","Jonathan Lane","jonathan.lane@altudo.co","3",0],["srinivasan.g@altudo.co","Srinivasan G","Lead","Kamal Hasija","kamal.hasija@altudo.co","4",1],["anju.thakur@altudo.co","Anju Thakur","Associate","Kamal Munjal","kamal.munjal@altudo.co","4",0],["charu.chawla@altudo.co","Charu Chawla","Associate Manager","Kanchan Saxena","kanchan.saxena@altudo.co","2",0],["malini.gautam@altudo.co","Malini Gautam","Manager","Kanchan Saxena","kanchan.saxena@altudo.co","3",0],["kumar.deepak@altudo.co","Deepak Kumar","Lead","Karthikeyan Kumaravel","karthikeyan.kumaravel@altudo.co","4",0],["soniya.yadav@altudo.co","Soniya Yadav","Lead","Karthikeyan Kumaravel","karthikeyan.kumaravel@altudo.co","3",0],["ravindra.mishra@altudo.co","Ravindra Mishra","Senior Associate","Karthikeyan Kumaravel","karthikeyan.kumaravel@altudo.co","5",1],["nishant.kumar@altudo.co","Nishant Kumar","Associate Lead","Kartik Singh","kartik.singh@altudo.co","4",0],["sangeeta.panwar@altudo.co","Sangeeta Panwar","Senior Associate","Kartik Singh","kartik.singh@altudo.co","4",0],["sufiyan.shaikh@altudo.co","Sufiyan Shaikh","Senior Associate","Kartik Singh","kartik.singh@altudo.co","2",0],["vedansh.khanna@altudo.co","Vedansh Khanna","Trainee","Kavita Sharma","kavita.sharma@altudo.co","Probation",0],["disha.thakkar@altudo.co","Disha Thakkar","Senior Associate","Kavita Sharma","kavita.sharma@altudo.co","4",0],["bhamidipati.srikanth@altudo.co","Srikanth Bhamidipati","Senior Associate","Kavya Bankapur","kavya.bankapur@altudo.co","4",0],["varun.singh@altudo.co","Varun Singh","Architect","Khushant Dhingra","khushant.dhingra@altudo.co","3",0],["lalit.joshi@altudo.co","Lalit Joshi","Associate Lead","Khushant Dhingra","khushant.dhingra@altudo.co","3",0],["ravi.shrivastav@altudo.co","Ravi Shrivastav","Lead","Khushant Dhingra","khushant.dhingra@altudo.co","3",1],["tanvi.vaid@altudo.co","Tanvi Vaid","Senior Associate","Khushant Dhingra","khushant.dhingra@altudo.co","3",0],["mohit.soni@altudo.co","Mohit Soni","Senior Associate","Kirti Kumar","kirti.kumar@altudo.co","2",0],["pinky.yadav@altudo.co","Pinky .","Senior Associate","Kirti Kumar","kirti.kumar@altudo.co","3",0],["yash.kansal@altudo.co","Yash Kansal","Associate Lead","Kirti Kumar","kirti.kumar@altudo.co","3",0],["harender.kumar@altudo.co","Harender Kumar","Architect","Kranthi Pashikanti","kranthi.pashikanti@altudo.co","Consultant",0],["karthikeyan.kumaravel@altudo.co","Karthikeyan Kumaravel","Architect","Kranthi Pashikanti","kranthi.pashikanti@altudo.co","4",1],["sumit.bhatia@altudo.co","Sumit Bhatia","Architect","Kranthi Pashikanti","kranthi.pashikanti@altudo.co","",0],["pasan.samarakoon@altudo.co","Pasan Samarakoon","Associate Lead","Kranthi Pashikanti","kranthi.pashikanti@altudo.co","3",0],["rohan.bhateja@altudo.co","Rohan Bhateja","Lead","Kranthi Pashikanti","kranthi.pashikanti@altudo.co","5",1],["deepti.s@altudo.co","Deepti S","Associate","Kritika Jain","kritika.jain@altudo.co","3",1],["shivika.adlakha@altudo.co","Shivika Adlakha","Senior Associate","Kritika Jain","kritika.jain@altudo.co","4",0],["harsha.gupta@altudo.co","Harsha - Gupta","Solution Consultant","Kumar Pranay","kumar.pranay@altudo.co","3",0],["preeti.singh@altudo.co","Preeti Singh","Associate","Kumar Pranay","kumar.pranay@altudo.co","4",0],["shalini.kumari@altudo.co","Shalini Kumari","Junior Associate","Kumar Pranay","kumar.pranay@altudo.co","Probation",0],["arun.pradeepan@altudo.co","Arun Pradeepan","Senior Solution Consultant","Kumar Pranay","kumar.pranay@altudo.co","4",0],["damola.egbeyemi@altudo.co","Damola Egbeyemi","Senior Solution Consultant","Kushagra Goswami","kushagra.goswami@altudo.co","4",0],["kumar.pranay@altudo.co","Kumar Pranay","Senior Manager","Kushagra Goswami","kushagra.goswami@altudo.co","4",0],["ashwani.kumar@altudo.co","Ashwani Kumar","Associate Lead","Madhur Madaan","madhur.madaan@altudo.co","3",0],["nimit.aggarwal@altudo.co","Nimit Aggarwal","Lead","Madhur Madaan","madhur.madaan@altudo.co","3",0],["ramesh.kumar@altudo.co","Ramesh Kumar R","Associate Lead","Madhur Madaan","madhur.madaan@altudo.co","4",0],["rajat.jhamb@altudo.co","Rajat Jhamb","Associate Lead","Madhur Madaan","madhur.madaan@altudo.co","5",1],["om.singh@altudo.co","Om Kumar Singh","Junior Associate","Mahesh Kambhampati","mahesh.kambhampati@altudo.co","3",0],["niranjan.sadhu@altudo.co","Niranjan Sadhu","Senior Associate","Mahesh Kambhampati","mahesh.kambhampati@altudo.co","3",0],["kumar.sumit@altudo.co","Sumit Kumar","Associate Lead","Mahesh Kambhampati","mahesh.kambhampati@altudo.co","5",1],["ashish.kumar@altudo.co","Ashish Kumar","Associate Lead","Mandipsinh Chavda","mandip.sinh@altudo.co","5",1],["tamizhendhi.v@altudo.co","Tamizhendhi V","Senior Associate","Mandipsinh Chavda","mandip.sinh@altudo.co","4",1],["kirti.giri@altudo.co","Kirti Giri","Senior Associate","Mandipsinh Chavda","mandip.sinh@altudo.co","4",1],["krati.shrivastava@altudo.co","Krati Shrivastava","Junior Associate","Manisha Naik","manisha.naik@altudo.co","3",0],["sujeet.arya@altudo.co","Sujeet Kumar Arya","Associate","Manoj Kumar","manoj.kumar@altudo.co","DSS",0],["shah.chaitya@altudo.co","Chaitya Shah","Associate Manager","Manoj Sharma","manoj.sharma@altudo.co","3",0],["diksha.madan@altudo.co","Diksha Harsh Madan","Senior Associate","Manoj Sharma","manoj.sharma@altudo.co","4",1],["suman.khatua@altudo.co","Suman Khatua","Senior Associate","Manoj Sharma","manoj.sharma@altudo.co","4",1],["abhishek.garia@altudo.co","Abhishek Garia","Junior Associate","Maru Parag","parag.maru@altudo.co","Confirmed",0],["kashish.tyagi@altudo.co","Kashish Tyagi","Junior Associate","Maru Parag","parag.maru@altudo.co","Confirmed",0],["pravesh.sharma@altudo.co","Pravesh Sharma","Junior Associate","Maru Parag","parag.maru@altudo.co","Confirmed",0],["abhishek.walia@altudo.co","Abhishek walia","Junior Associate","Maru Parag","parag.maru@altudo.co","3",0],["sanjeev.gupta@altudo.co","Sanjeev Gupta","Senior Director","Matthew Vandermolen","matt.vandermolen@altudo.co","4",1],["khushant.dhingra@altudo.co","Khushant Dhingra","Architect","Matthew Vandermolen","matt.vandermolen@altudo.co","3",1],["bhumika.yadav@altudo.co","Bhumika Yadav","Account Executive","Mayank Khattar","mayank.khattar@altudo.co","3",0],["saksham.lamba@altudo.co","Saksham Lamba","Account Executive","Mayank Khattar","mayank.khattar@altudo.co","Probation",0],["ankita.tiwari@altudo.co","Ankita Tiwari","Senior Sales Development Representative","Mayank Khattar","mayank.khattar@altudo.co","5",1],["muskaan.gaur@altudo.co","Muskaan Gaur","Sales Development Representative","Mayank Khattar","mayank.khattar@altudo.co","4",0],["tanisha.kashyap@altudo.co","Tanisha Kashyap","Sales Development Representative","Mayank Khattar","mayank.khattar@altudo.co","3",0],["tanveer.singh@altudo.co","Tanveer Singh Randhawa","Sales Development Representative","Mayank Khattar","mayank.khattar@altudo.co","Probation",0],["yashika.jain@altudo.co","Yashika Jain","Senior Account Executive","Mayank Khattar","mayank.khattar@altudo.co","Probation",0],["ramkumar.nambhi@altudo.co","Ramkumar Nambhi","Director","Miguel Minoldo","miguel.minoldo@altudo.co","Probation",1],["dan.allegrone@altudo.co","Daniel Allegrone","Senior Architect","Miguel Minoldo","miguel.minoldo@altudo.co","4",0],["kiran.mahalingappa@altudo.co","Kiran Mahalingappa","Associate","Mukesh Kumar","mukesh.kumar@altudo.co","4",0],["jaydip.amrutlal@altudo.co","Jaydip Amrutlal","Lead","Mukesh Kumar","mukesh.kumar@altudo.co","4",1],["gaurav.arora@altudo.co","Gaurav Arora","Associate Architect","Mukesh Kumar","mukesh.kumar@altudo.co","4",0],["saurav.bhattacharyya@altudo.co","Saurav Bhattacharyya","Associate","Muzammil Hasan","muzammil.hasan@altudo.co","2",0],["ragini.kumari@altudo.co","Ragini Kumari","Junior Associate","Muzammil Hasan","muzammil.hasan@altudo.co","4",0],["anushtha.verma@altudo.co","Anushtha Verma","Trainee","Namala Vinay Kumar","kumar.vinay@altudo.co","",0],["niraj.kumar@altudo.co","Niraj Kumar Prajapati","Associate","Navin Kumar","navin.kumar@altudo.co","3",0],["prabhav.yadav@altudo.co","Prabhav Yadav","Associate","Navin Kumar","navin.kumar@altudo.co","4",0],["anand.singh@altudo.co","Anand Singh","Associate Lead","Navin Kumar","navin.kumar@altudo.co","5",0],["james.ekka@altudo.co","James Ekka","Senior Associate","Navin Kumar","navin.kumar@altudo.co","3",0],["ravi.rajoria@altudo.co","Ravi Rajoria","Senior Associate","Navin Kumar","navin.kumar@altudo.co","3",0],["shubhi.rastogi@altudo.co","Shubhi Rastogi","Senior Associate","Navita Panwar","navita.panwar@altudo.co","Probation",0],["ojas.sharma@altudo.co","Ojas Sharma","Associate Lead","Navya Mallepalli","navya.Mallepalli@altudo.co","5",1],["subham.agarwal@altudo.co","Subham Agarwal","Senior Associate","Navya Mallepalli","navya.Mallepalli@altudo.co","3",0],["sahil.kumar@altudo.co","Sahil Kumar","Senior Associate","Nawaz Mehdi","Nawaz.mehdi@altudo.co","3",0],["sripada.prathyusha@altudo.co","Sripada Prathyusha","Associate Lead","Nawaz Mehdi","Nawaz.mehdi@altudo.co","5",0],["veni.rengasamy@altudo.co","Veni Rengasamy","Senior Associate","Nawaz Mehdi","Nawaz.mehdi@altudo.co","3",0],["abhishek.pal@altudo.co","Abhishek Pal","Junior Associate","Neha Maurya","Neha.maurya@altudo.co","4",0],["ankit.gupta@altudo.co","Ankit Kumar Gupta","Junior Associate","Neha Maurya","Neha.maurya@altudo.co","Probation",0],["sumaiya.parveen@altudo.co","Sumaiya Parveen","Junior Associate","Neha Maurya","Neha.maurya@altudo.co","3",0],["nayan.velde@altudo.co","Nayan Velde","Senior Manager","Nidhi Gupta","abhishek.kumar@altudo.co","4",0],["abhishek.kumar@altudo.co","Abhishek Kumar","Director","Nidhi Gupta","nidhi.gupta@altudo.co","3",0],["darpan.datta@altudo.co","Darpan Datta","Manager","Nidhi Gupta","nidhi.gupta@altudo.co","Probation",0],["kanchan.saxena@altudo.co","Kanchan Saxena","Senior Manager","Nidhi Gupta","nidhi.gupta@altudo.co","5",1],["savita.bajulge@altudo.co","Savita Bajulge","Manager","Nidhi Gupta","nidhi.gupta@altudo.co","3",0],["nishoka.r@altudo.co","Nishoka R","Senior Associate","Nimit Aggarwal","nimit.aggarwal@altudo.co","5",1],["sharma.varun@altudo.co","Varun Sharma","Senior Associate","Nimit Aggarwal","nimit.aggarwal@altudo.co","4",1],["azhar.rizvi@altudo.co","Azhar Rizvi","Associate","Nipsy Jhamb","nipsy.jhamb@altudo.co","2",0],["rajat.babbar@altudo.co","Rajat Babbar","Lead","Nipsy Jhamb","nipsy.jhamb@altudo.co","4",1],["kashish.sharma@altudo.co","Kashish Sharma","Senior Associate","Nipsy Jhamb","nipsy.jhamb@altudo.co","3",0],["manisha.naik@altudo.co","Manisha Naik","Associate Lead","Nipsy Jhamb","nipsy.jhamb@altudo.co","4",0],["panda@altudo.co","Lambodar Panda","Senior Associate","Nipsy Jhamb","nipsy.jhamb@altudo.co","",0],["harmeet.singh@altudo.co","Harmeet Singh","Senior Director","Nipsy Jhamb","nipsy.jhamb@altudo.co","4",0],["siddhant.chaudhary@altudo.co","Siddhant Chaudhary","Associate","Nishant Kumar","nishant.kumar@altudo.co","Probation",0],["yash.pal@altudo.co","Yashpal","Senior Associate","Nishant Kumar","nishant.kumar@altudo.co","Probation",0],["ritik.maurya@altudo.co","Ritik Maurya","Associate","Nitesh Kumar","Nitesh@altudo.co","3",0],["aman.malhotra@altudo.co","Aman Malhotra","Lead","Nitesh Kumar","nitesh@altudo.co","3",0],["nupur.joshi@altudo.co","Nupur Ashutosh Joshi","Senior Associate","Nitesh Kumar","nitesh@altudo.co","Probation",0],["shekhar.bharti@altudo.co","Shekhar Bharti","Senior Associate","Nitesh Kumar","nitesh@altudo.co","Probation",0],["rahul.gaur@altudo.co","Rahul Gaur","Lead","Nitesh Kumar Verma","nitesh.verma@altudo.co","5",1],["rahul.sahni@altudo.co","Rahul Sahni","Associate Lead","Nitesh Kumar Verma","nitesh.verma@altudo.co","4",1],["sumon.sen@altudo.co","Sumon Sen","Associate Lead","Nitesh Kumar Verma","nitesh.verma@altudo.co","4",0],["sudhir.mali@altudo.co","Sudhir Suresh Mali","Lead","Nitesh Kumar Verma","nitesh.verma@altudo.co","Probation",0],["aditya.pandey@altudo.co","Aditya Pandey","Senior Associate","Nitesh Kumar Verma","nitesh.verma@altudo.co","Probation",0],["nitish.paswan@altudo.co","Nitish Kumar Paswan","Lead","Nitesh Kumar Verma","nitesh.verma@altudo.co","4",0],["saumya.gupta@altudo.co","Saumya Gupta","Senior Associate","Nitish Kumar Paswan","nitish.paswan@altudo.co","3",0],["manish.borkar@altudo.co","Manish Shrawan Borkar","Senior Associate","Nitish Kumar Paswan","nitish.paswan@altudo.co","3",0],["muzammil.hasan@altudo.co","Muzammil Hasan","Senior Associate","Nitish Kumar Paswan","nitish.paswan@altudo.co","4",0],["saumitra.vilankar@altudo.co","Saumitra Ashok Vilankar","Senior Associate","Nitish Kumar Paswan","nitish.paswan@altudo.co","3",0],["rutvik.chavan@altudo.co","Rutvik Chavan","Junior Associate","Ojas Sharma","ojas.sharma@altudo.co","3",0],["sushant@altudo.co","Sushant","Junior Associate","Ojas Sharma","ojas.sharma@altudo.co","3",0],["sartaj.pala@altudo.co","Sartaj Ahmad Pala","Manager","Pankaj Kumar","pankaj.pathak@altudo.co","3",0],["ankur.chaudhary@altudo.co","Ankur Chaudhary","Senior Manager","Pankaj Kumar","pankaj.pathak@altudo.co","4",1],["ragini.samanta@altudo.co","Ragini Samanta","Senior Manager","Pankaj Kumar","pankaj.pathak@altudo.co","4",1],["navin.kumar@altudo.co","Navin Kumar","Manager","Pankaj Kumar","pankaj.pathak@altudo.co","4",0],["sudhanshu.soni@altudo.co","Sudhanshu Soni","Associate Lead","Pasan Samarakoon","pasan.samarakoon@altudo.co","3",0],["prateek.setia@altudo.co","Prateek Setia","Senior Associate","Pawan Kumar Tyagi","pawan.tyagi@altudo.co","",0],["priyal.intwala@altudo.co","Priyal Nilesh Intwala","Associate","Pawan Kumar Tyagi","pawan.tyagi@altudo.co","Probation",0],["sailaab.tirkey@altudo.co","Sailaab Tirkey","Senior Associate","Pawan Kumar Tyagi","pawan.tyagi@altudo.co","4",0],["manoj.kumar@altudo.co","Manoj Kumar","Associate Architect","Prachi Mitesh Dahate","prachi.dahate@altudo.co","DSS",0],["madhur.madaan@altudo.co","Madhur Madaan","Architect","Prachi Mitesh Dahate","prachi.dahate@altudo.co","3",0],["sowmya.g@altudo.co","Sowmya GR","Architect","Prachi Mitesh Dahate","prachi.dahate@altudo.co","4",1],["harshit.makhecha@altudo.co","Harshit Makhecha","Senior Associate","Prachi Mitesh Dahate","prachi.dahate@altudo.co","4",1],["jatin.relan@altudo.co","Jatin Relan","Manager","Pradeep Patel","pradeep.patel@altudo.co","3",0],["dhruv.puri@altudo.co","Dhruv Puri","Manager","Pradeep Patel","pradeep.patel@altudo.co","4",1],["mayank.sinha@altudo.co","Mayank Sinha","Manager","Pradeep Patel","pradeep.patel@altudo.co","3",0],["neha.mittal@altudo.co","Neha Mittal","Associate Manager","Pradeep Patel","pradeep.patel@altudo.co","3",0],["faraz.akhtar@altudo.co","Mohd.Faraz Akhtar","Associate","Preetam Anand","Preetam.anand@altudo.co","3",0],["khushseerat.kaur@altudo.co","Khushseerat Kaur","Junior Associate","Preetam Anand","Preetam.anand@altudo.co","Confirmed",0],["vanshika.bhardwaj@altudo.co","Vanshika Bhardwaj","Junior Associate","Preetam Anand","Preetam.anand@altudo.co","Confirmed",0],["abby@altudo.co","Abhishek Kumar","Sales Development Representative","Priyanka Kumari","sarah.williams@altudo.co","Probation",0],["diana@altudo.co","Divyanshi Seth","Sales Development Representative","Priyanka Kumari","sarah.williams@altudo.co","3",0],["sahib.singh@altudo.co","Sahib Singh","Junior Associate","Puneet Garg","puneet.garg@altudo.co","Confirmed",0],["austin.govella@altudo.co","Austin Govella","Director","Radoj Glisik","radoj.glisik@altudo.co","4",0],["chase.thompson@altudo.co","Chase Thompson","Director","Radoj Glisik","radoj.glisik@altudo.co","4",0],["sachin.datta@altudo.co","Sachin Datta","Director","Radoj Glisik","radoj.glisik@altudo.co","3",0],["sanyam.chugh@altudo.co","Sanyam Chugh","Manager","Radoj Glisik","radoj.glisik@altudo.co","5",1],["ashley@altudo.co","Ashwathy Jaikumar","Lead","Raghav Bhowmik","raghav.bhowmik@altudo.co","5",0],["anchal.srivastava@altudo.co","Anchal Srivastava","Sales Development Representative","Raghav Bhowmik","raghav.bhowmik@altudo.co","Probation",0],["ansh.soral@altudo.co","Ansh Soral","Senior Manager","Raghav Bhowmik","raghav.bhowmik@altudo.co","Probation",0],["gauri.vats@altudo.co","Gauri Vats","Manager","Raghav Bhowmik","raghav.bhowmik@altudo.co","",0],["satyam.tyagi@altudo.co","Satyam Tyagi","Associate","Rahul Chikara","rahul.chikara@altudo.co","3",0],["smriti.agarwal@altudo.co","Smriti Agarwal","Associate","Rahul Chikara","rahul.chikara@altudo.co","Probation",0],["deepika.merai@altudo.co","Deepika Merai","Associate Lead","Rahul Gaur","rahul.gaur@altudo.co","3",0],["ajit.verma@altudo.co","Ajit Verma","Associate Lead","Rahul Gaur","rahul.gaur@altudo.co","4",0],["sarika.kumari@altudo.co","Sarika Kumari","Senior Associate","Rahul Gaur","rahul.gaur@altudo.co","3",0],["vipin.pandey@altudo.co","Vipin Kumar Pandey","Associate Lead","Rahul Gaur","rahul.gaur@altudo.co","3",0],["kamal.hasija@altudo.co","Kamal Hasija","Director","Rahul Khosla","rahul.khosla@altudo.co","5",1],["ankit.sethi@altudo.co","Ankit Sethi","Senior Vice President","Rahul Khosla","rahul.khosla@altudo.co","4",0],["david.sanfilippo@altudo.co","David San Filippo","Senior Vice President","Rahul Khosla","rahul.khosla@altudo.co","4",0],["varun.khosla@altudo.co","Varun Khosla","Vice President","Rahul Khosla","rahul.khosla@altudo.co","",0],["varun.kashiv@altudo.co","Varun Kashiv","Senior Vice President","Rahul Khosla","rahul.khosla@altudo.co","4",0],["yash.kumar@altudo.co","Yash Kumar","Vice President","Rahul Khosla","rahul.khosla@altudo.co","5",0],["ganesh.sonawane@altudo.co","Ganesh Sonawane","Lead","Rahul Sahni","rahul.sahni@altudo.co","3",0],["amol.shinde@altudo.co","Amol Kailas Shinde","Senior Associate","Rahul Sahni","rahul.sahni@altudo.co","4",0],["saurabh.dass@altudo.co","Saurabh Dass","Senior Associate","Rahul Sahni","rahul.sahni@altudo.co","4",0],["ayushi.taneja@altudo.co","Ayushi Taneja","Senior Associate","Rajat Babbar","Rajat.Babbar@altudo.co","4",0],["mayank.gautam@altudo.co","Mayank Gautam","Junior Associate","Ramesh Kumar R","Ramesh.Kumar@altudo.co","4",0],["ravindra.giri@altudo.co","Ravindra Kumar Giri","Associate Director","Ramkumar Nambhi","ramkumar.nambhi@altudo.co","5",1],["shamsher.singh@altudo.co","Shamsher Singh Dhillon","Senior Architect","Ramkumar Nambhi","ramkumar.nambhi@altudo.co","5",0],["amuthan.s@altudo.co","Amuthan S","Architect","Ravindra Kumar Giri","ravindra.giri@altudo.co","3",0],["abhay.pratap@altudo.co","Abhay Pratap","Senior Associate","Ravindra Kumar Giri","ravindra.giri@altudo.co","3",0],["asmita.parkar@altudo.co","Asmita Ajit Parkar","Associate Lead","Ravindra Kumar Giri","ravindra.giri@altudo.co","4",0],["sonali.sapkal@altudo.co","Sonali Sapkal","Senior Associate","Ravindra Kumar Giri","ravindra.giri@altudo.co","3",0],["himanshi.singhal@altudo.co","Himanshi Singhal","Senior Associate","Rhea Jaspal","rhea.jaspal@altudo.co","",0],["abhinav.srivastav@altudo.co","Abhinav Srivastav","Associate Lead","Rohit Kumar","rohit.kumar@altudo.co","4",0],["shivanshu.kaushik@altudo.co","Shivanshu Kaushik","Associate Lead","Rohit Kumar","rohit.kumar@altudo.co","",1],["kamal.munjal@altudo.co","Kamal Munjal","Senior Associate","Rohit Kumar","rohit.kumar@altudo.co","3",0],["ruchi.rana@altudo.co","Ruchi Rana","Associate Lead","Rohit Saini","rohit.saini@altudo.co","3",0],["tanushri.mishra@altudo.co","Tanushri Mishra","Associate Lead","Rohit Saini","rohit.saini@altudo.co","3",0],["kavita.sharma@altudo.co","Kavita Sharma","Senior Associate","Rohit Saini","rohit.saini@altudo.co","3",0],["saurabh.matta@altudo.co","Saurabh Matta","Senior Associate","Ruchi Rana","ruchi.rana@altudo.co","3",0],["rahul.chikara@altudo.co","Rahul Chikara","Senior Associate","Sakshi Aggarwal","Sakshi.aggarwal@altudo.co","3",0],["sonal.saraswat@altudo.co","Sonal Saraswat","Senior Associate","Sakshi Aggarwal","Sakshi.aggarwal@altudo.co","3",0],["shreya.goyal@altudo.co","Shreya Goyal","Associate","Sanchit Chawla","sanchit.chawla@altudo.co","5",0],["akash.sharma@altudo.co","Akash Sharma","Junior Associate","Sanjay Vashist","sanjay.vashist@altudo.co","3",0],["abhishek.maji@altudo.co","Abhishek Maji","Trainee","Sanjay Vashist","sanjay.vashist@altudo.co","",0],["mandip.sinh@altudo.co","Mandipsinh Chavda","Architect","Sanjeev Gupta","sanjeev.gupta@altudo.co","4",1],["nitesh@altudo.co","Nitesh Kumar","Architect","Sanjeev Gupta","sanjeev.gupta@altudo.co","4",0],["prachi.dahate@altudo.co","Prachi Mitesh Dahate","Associate Director","Sanjeev Gupta","sanjeev.gupta@altudo.co","3",0],["anil.mall@altudo.co","Anil Kumar Mall","Senior Architect","Sanjeev Gupta","sanjeev.gupta@altudo.co","3",0],["anna@altudo.co","Aakriti Verma","Sales Development Representative","Sanjeev Kumar","vince@altudo.co","Probation",0],["parul.mishra@altudo.co","Parul Mishra","Lead","Sanyam Chugh","sanyam.chugh@altudo.co","Probation",0],["raqueem.khan@altudo.co","Raqueemullah Kaleemullah","Senior Manager","Sanyam Chugh","sanyam.chugh@altudo.co","3",0],["anuriti.sharma@altudo.co","Anuriti Sharma","Senior Product Owner","Sathish Balakrishnan","sathish.balakrishnan@altudo.co","5",1],["navita.panwar@altudo.co","Navita Panwar","Product Manager","Sathish Balakrishnan","sathish.balakrishnan@altudo.co","5",1],["ankush.bansal@altudo.co","Ankush Bansal","Director","Sathish Balakrishnan","sathish.balakrishnan@altudo.co","4",1],["pradeep.patel@altudo.co","Pradeep Patel","Director","Sathish Balakrishnan","sathish.balakrishnan@altudo.co","3",0],["nidhi.gupta@altudo.co","Nidhi Gupta","Senior Director","Sathish Balakrishnan","sathish.balakrishnan@altudo.co","4",1],["zoran.miuca@altudo.co","Zoran Miuca","Vice President","Sathish Balakrishnan","sathish.balakrishnan@altudo.co","Probation",0],["jayram.choudhary@altudo.co","Jayram Kumar Choudhary","Vice President","Krishna Munagala","krishna.munagala@altudo.co","4",0],["nipsy.jhamb@altudo.co","Nipsy Jhamb","Vice President","Krishna Munagala","krishna.munagala@altudo.co","4",0],["sathish.balakrishnan@altudo.co","Sathish Balakrishnan","Senior Vice President","Krishna Munagala","krishna.munagala@altudo.co","3",0],["bhavya.jain@altudo.co","Bhavya Jain","Junior Associate","Saumya Gupta","saumya.gupta@altudo.co","3",0],["lagan.sahotra@altudo.co","Lagan","Junior Associate","Saumya Gupta","saumya.gupta@altudo.co","3",0],["vishu.dhamija@altudo.co","Vishu Dhamija","Junior Associate","Saumya Gupta","saumya.gupta@altudo.co","3",0],["samriti.vij@altudo.co","Samriti Vij","Junior Associate","Saurav Bhattacharyya","saurav.bhattacharyya@altudo.co","Confirmed",0],["malick.ahmed@altudo.co","Ahmed Malick Atif","Solution Consultant","Shaddy Mohamed","malick.ahmed@altudo.co","Probation",0],["sumit.tandon@altudo.co","Sumit Tandon","Lead","Shamsher Singh Dhillon","shamsher.singh@altudo.co","4",0],["pawan.tyagi@altudo.co","Pawan Kumar Tyagi","Lead","Shamsher Singh Dhillon","shamsher.singh@altudo.co","3",0],["abhishek.sharma@altudo.co","Abhishek Sharma","Trainee","Shefali Gupta","shefali.gupta@altudo.co","",0],["yash.solanki@altudo.co","Yash Solanki","Trainee","Shefali Gupta","shefali.gupta@altudo.co","",0],["mercy.monica@altudo.co","Mercy Monica Hemrom","Junior Associate","Shilpa Gupta","shilpa.gupta@altudo.co","Probation",0],["yash.sharma@altudo.co","Yash Sharma","Associate","Shivanshu Kaushik","Shivanshu.kaushik@altudo.co","5",0],["kumar.abhishek@altudo.co","Abhishek Kumar","Junior Associate","Shivanshu Kaushik","Shivanshu.kaushik@altudo.co","4",0],["puneet.bansal@altudo.co","Puneet Kumar Bansal","Associate","Shivanshu Kaushik","Shivanshu.kaushik@altudo.co","4",0],["inam.hasan@altudo.co","Inam UI Hasan .A","Junior Associate","Sneha Yadav","sneha.yadav@altudo.co","4",0],["nidhi.sahay@altudo.co","Nidhi Sahay","Associate","Sonal Saraswat","sonal.saraswat@altudo.co","4",0],["naman.kumar@altudo.co","Naman Kumar","Junior Associate","Sonal Saraswat","sonal.saraswat@altudo.co","Probation",0],["nawaz.mehdi@altudo.co","Nawaz Mehdi","Associate Lead","Sowmya GR","sowmya.g@altudo.co","4",0],["shivani.kharbanda@altudo.co","Shivani Kharbanda","Lead","Sowmya GR","sowmya.g@altudo.co","Probation",0],["chirag.goel@altudo.co","Chirag Goel","Senior Associate","Sowmya GR","sowmya.g@altudo.co","5",1],["sharon.niroopma@altudo.co","J Sharon Niroopma","Associate Lead","Srinath Kotha","Srinath.K@altudo.co","5",0],["ajit.kumar@altudo.co","Ajit Kumar","Lead","Subramanian Ramanathan","subramanian.ramanathan@altudo.co","5",1],["ankur.arya@altudo.co","Ankur Arya","Senior Director","Subramanian Ramanathan","subramanian.ramanathan@altudo.co","",0],["meezan.shaikh@altudo.co","Meezan Abdul Mannan Shaikh","Senior Associate","Sudhir Suresh Mali","sudhir.mali@altudo.co","3",0],["nitin.singh@altudo.co","Nitin Umesh Singh","Senior Associate","Sudhir Suresh Mali","sudhir.mali@altudo.co","4",0],["vaneet.kundal@altudo.co","Vaneet Kundal","Junior Associate","Sudhir Suresh Mali","sudhir.mali@altudo.co","3",0],["aashish.bikram@altudo.co","Aashish Bikram Gupta","Junior Associate","Sumit Bhatia","sumit.bhatia@altudo.co","4",0],["mahesh.kambhampati@altudo.co","Mahesh Kambhampati","Lead","Sumit Bhatia","sumit.bhatia@altudo.co","5",1],["shruti.shukla@altudo.co","Shruti Shukla","Associate","Sumit Tandon","sumit.tandon@altudo.co","3",0],["yashaswi.shubh@altudo.co","Yashaswi Shubh","Associate","Sumit Tandon","sumit.tandon@altudo.co","4",0],["joydeep.halder@altudo.co","Joydeep Halder","Senior Associate","Sumon Sen","sumon.sen@altudo.co","3",0],["shruti.yadav@altudo.co","Shruti Yadav","Senior Associate","Sumon Sen","sumon.sen@altudo.co","3",0],["surbhi.gothi@altudo.co","Surbhi Gothi","Senior Associate","Sumon Sen","sumon.sen@altudo.co","Mat Leave",0],["nilay.fuladi@altudo.co","Nilay Sachin Fuladi","Associate","Swati Khatri","swati.khatri@altudo.co","5",1],["gunjan.arora@altudo.co","Gunjan Arora","Manager","Swati Khatri","swati.khatri@altudo.co","3",0],["kritika.jain@altudo.co","Kritika Jain","Senior Manager","Swati Khatri","swati.khatri@altudo.co","5",0],["sanchit.chawla@altudo.co","Sanchit Chawla","Manager","Swati Khatri","swati.khatri@altudo.co","Probation",0],["rhea.jaspal@altudo.co","Rhea Jaspal","Lead","Swati Khatri","swati.khatri@altudo.co","5",1],["neha.maurya@altudo.co","Neha Maurya","Senior Associate","Sweeta Das","sweeta.das@altudo.co","3",0],["anil.kumar@altudo.co","Anil Kumar","Junior Associate","Sweeta Das","sweeta.das@altudo.co","3",0],["kirti.maurya@altudo.co","Kirti Maurya","Junior Associate","Sweeta Das","sweeta.das@altudo.co","3",0],["rishav.kumar@altudo.co","Rishav Kumar","Junior Associate","Sweeta Das","sweeta.das@altudo.co","4",0],["raghavendhiran@altudo.co","Raghavendhiran","Associate","Tanushri Mishra","tanushri.mishra@altudo.co","3",0],["daksh@altudo.co","Daksh","Junior Associate","Tushar Singh","tushar.singh@altudo.co","Confirmed",0],["adnan.hussain@altudo.co","Md Adnan Hussain","Junior Associate","Tushar Singh","tushar.singh@altudo.co","4",0],["vani.gupta@altudo.co","Vani Gupta","Junior Associate","Tushar Singh","tushar.singh@altudo.co","4",0],["ankush.panwar@altudo.co","Ankush Panwar","Trainee","Tushar Singh","tushar.singh@altudo.co","Probation",0],["janaka.fernando@altudo.co","Janaka Nishan Fernando","Vice President","Una Verhoeven","una.verhoeven@altudo.co","4",0],["mukesh.kumar@altudo.co","Mukesh Kumar","Senior Solution Architect","Una Verhoeven","una.verhoeven@altudo.co","3",1],["jonathan.lane@altudo.co","Jonathan Lane","Architect","Una Verhoeven","una.verhoeven@altudo.co","4",1],["archana.saini@altudo.co","Archana Kaul Saini","Director","Una Verhoeven","una.verhoeven@altudo.co","4",0],["kranthi.pashikanti@altudo.co","Kranthi Kumar Pashikanti","Senior Director","Una Verhoeven","una.verhoeven@altudo.co","5",1],["miguel.minoldo@altudo.co","Miguel Sebastian Minoldo","Director","Una Verhoeven","una.verhoeven@altudo.co","Probation",1],["kunal.godinho@altudo.co","Kunal Andrew Godinho","Associate","Upasana Thapar","upasana.thapar@altudo.co","3",0],["simran.kapoor@altudo.co","Simran Kapoor","Senior Associate","Upasana Thapar","upasana.thapar@altudo.co","4",0],["aayushi.sood@altudo.co","Aayushi Sood","Manager","Upasana Thapar","upasana.thapar@altudo.co","Probation",0],["shubhangi.pant@altudo.co","Shubhangi Pant","Manager","Upasana Thapar","upasana.thapar@altudo.co","4",0],["harshita.somanchi@altudo.co","Harshita Somanchi","Senior Manager","Upasana Thapar","upasana.thapar@altudo.co","3",0],["ronnie.shefard@altudo.co","Ronnie Shefard","Senior Manager","Upasana Thapar","upasana.thapar@altudo.co","4",1],["swati.khatri@altudo.co","Swati Khatri","Vice President","Varun Kashiv","varun.kashiv@altudo.co","3",0],["harpreet.bushell@altudo.co","Harpreet Kaur Bushell","Director","Varun Kashiv","varun.kashiv@altudo.co","3",0],["chris.shalchi@altudo.co","Shalchi Christopher Bryan","Vice President","Varun Kashiv","varun.kashiv@altudo.co","",0],["archit.garg@altudo.co","Archit Garg","Vice President","Varun Kashiv","varun.kashiv@altudo.co","4",0],["harsha.teja@altudo.co","Harsha Teja","Associate Director","Varun Kashiv","varun.kashiv@altudo.co","3",0],["shivansh@altudo.co","Shivansh .","Junior Associate","Varun Kumar Singh","varun.singh@altudo.co","2",0],["rajat.sharma@altudo.co","Rajat Prakash Sharma","Associate","Varun Kumar Singh","varun.singh@altudo.co","4",0],["rakesh.ranjan@altudo.co","Rakesh Ranjan","Senior Associate","Varun Kumar Singh","varun.singh@altudo.co","4",0],["sanaul.haq@altudo.co","Sanaul Haq","Manager","Vikas Mishra","vikas.mishra@altudo.co","Probation",0],["richa.dubey@altudo.co","K Richa Dubey","Associate","Vikash Kumar Choudhary","vikash.choudhary@altudo.co","Mat Leave",0],["divya.jain@altudo.co","Divya Jain","Associate Manager","Vikash Kumar Choudhary","vikash.choudhary@altudo.co","3",0],["rajesh.kumar@altudo.co","Rajesh Kumar","Senior Associate","Vipin Kumar Pandey","Vipin.Pandey@altudo.co","3",0],["bhavya.malhotra@altudo.co","Bhavya Malhotra","Junior Associate","Ravindra Kumar Giri","ravindra.giri@altudo.co","Confirmed",0],["sai.vishnu@altudo.co","Madala Sai Vishnu","Junior Associate","Ravindra Kumar Giri","ravindra.giri@altudo.co","4",0],["subramanian.ramanathan@altudo.co","Subramanian Ramanathan","Associate Vice President","Vishal Panchal","vishal.panchal@altudo.co","4",1],["manoj.sharma@altudo.co","Manoj Kumar Sharma","Director","Vishal Panchal","vishal.panchal@altudo.co","3",0],["pradeep.kumar@altudo.co","Pradeep Kumar","Associate","Yash Kumar","yash.kumar@altudo.co","4",0],["premanshu.tiwari@altudo.co","Premanshu Krishna Tiwari","Sales Development Representative","Yash Kumar","yash.kumar@altudo.co","2",0],["raghav.bhowmik@altudo.co","Raghav Bhowmik","Director","Yash Kumar","yash.kumar@altudo.co","5",0],["kushagra.goswami@altudo.co","Kushagra Goswami","Senior Director","Yash Kumar","yash.kumar@altudo.co","Probation",0],["mayank.khattar@altudo.co","Mayank Khattar","Senior Director","Yash Kumar","yash.kumar@altudo.co","",0],["aashish.verma@altudo.co","Aashish Verma","Senior Manager","Yash Kumar","yash.kumar@altudo.co","",0],["anadeep.kaur@altudo.co","Anadeep Kaur","Senior Sales Development Representative","Yash Kumar","yash.kumar@altudo.co","Probation",0],["upasana.thapar@altudo.co","Upasana Thapar","Director","Yash Kumar","yash.kumar@altudo.co","4",0],["siddharth.gautam@altudo.co","Siddharth Gautam","Manager","Yash Kumar","yash.kumar@altudo.co","",0],["alan@altudo.co","Aayush Dhatarwal","Junior Sales Development Representative","Yashi Sharma","emily@altudo.co","3",0],["ankit.punia@altudo.co","Ankit Punia","Senior Associate","Yogesh Mannar","yogesh.yuvakumar@altudo.co","4",0],["vikas.mishra@altudo.co","Vikas Mishra","Director","Zoran Miuca","zoran.miuca@altudo.co","3",0],["anna.ivanova@altudo.co","Anna Ivanova","Program Manager","Zoran Miuca","zoran.miuca@altudo.co","4",1],["pankaj.pathak@altudo.co","Pankaj Kumar","Senior Director","Zoran Miuca","zoran.miuca@altudo.co","4",1]];
+const ROSTER = ROSTER_RAW.map(r => ({ email: r[0].toLowerCase(), name: r[1], role: r[2], mentor: r[3], mentorEmail: r[4], rating: r[5] || "", hipo: !!r[6] }));
+function isHipo(email) { const r = ROSTER_BY_EMAIL[email]; return !!(r && r.hipo); }
+const RATING_ORDER = ["5", "4", "3", "2", "Probation", "Confirmed", "Converted", "Consultant", "DSS", "Mat Leave", "Unrated"];
+function ratingOf(email) { const r = ROSTER_BY_EMAIL[email]; return (r && r.rating) || "Unrated"; }
+function ratingChipClass(rt) { return rt === "5" ? "ok" : rt === "4" ? "ok" : rt === "2" ? "flag" : rt === "3" ? "warn" : ""; }
+const ROSTER_BY_EMAIL = Object.fromEntries(ROSTER.map(r => [r.email, r]));
+
+/* Career-stage banding for the 32 role titles in the roster. */
+function bandOf(role) {
+  const r = (role || "").toLowerCase();
+  if (!r) return "Unmapped";
+  if (r.includes("vice president")) return "Executive (VP+)";
+  if (r.includes("director")) return "Director";
+  if (r === "trainee" || r.startsWith("junior")) return "Early career";
+  if (r.includes("senior manager") || r === "manager" || r.includes("manager sales")) return "Manager";
+  if (r.includes("architect")) return "Architect";
+  if (r.includes("senior associate")) return "Senior Associate";
+  if (r.includes("associate lead") || r === "lead" || r.startsWith("lead ") ||
+      r.includes("associate manager") || r.includes("product") || r.includes("program manager")) return "Lead";
+  if (r.includes("senior")) return "Senior Associate";  // senior SDR / consultant / AE
+  return "Associate"; // associate, SDR, solution consultant, account executive
+}
+const BAND_ORDER = ["Early career","Associate","Senior Associate","Lead","Manager","Architect","Director","Executive (VP+)","Unmapped"];
+
+/* ---------------- state + persistence ---------------- */
+const STORE_KEY = "evp_insights_v1";
+let state = { responses: {}, source: "", tasks: [] };   // responses: email -> submission; tasks: follow-ups
+
+try {
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw) { const s = JSON.parse(raw); if (s && s.responses) state = s; }
+  if (!Array.isArray(state.tasks)) state.tasks = [];
+} catch {}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {} }
+
+const ui = { pillar: "all", band: "all", theme: "", search: "", onlyLow: false, commentLimit: 12, peopleSearch: "", peopleFilter: "all", peopleLimit: 15, ratingSel: [], hipoOnly: false, roleSel: [], rolePanelOpen: false };
+
+/* ---------------- demo data (seeded, so it is stable) ---------------- */
+function mulberry32(a) { return function() {
+  a |= 0; a = a + 0x6D2B79F5 | 0;
+  let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+const DEMO_COMMENTS = {
+  career: [
+    "The path from my current level to the next one isn't written down anywhere — I'd love a visible framework.",
+    "Promotion timelines feel unclear; I hear different answers from different leads.",
+    "I want more clarity on what 'ready for the next level' actually looks like in my track.",
+    "Lateral moves between practices don't seem visible from where I sit.",
+    "My mentor has been helpful, but the formal promotion criteria still feel opaque.",
+  ],
+  learning: [
+    "Most learning is on-the-job; I'd value structured certification support for my stack.",
+    "Feedback is frequent but informal — a proper development conversation each quarter would help.",
+    "Training budget approval takes too long; by the time it clears, the cohort has closed.",
+    "Would love shadowing opportunities on larger client engagements.",
+  ],
+  people: [
+    "My immediate team is excellent; cross-team ownership is where friction shows up.",
+    "Leadership is approachable, but decisions could be communicated with more context.",
+    "Great peers — some churn recently has left knowledge gaps we're still covering.",
+  ],
+  culture: [
+    "Values are real here, though delivery pressure sometimes crowds them out at quarter end.",
+    "Recognition rituals exist but feel concentrated in a few teams.",
+    "Hybrid expectations vary a lot by team — consistency would help.",
+  ],
+  rewards: [
+    "My pay feels below market for my skill set; a band-positioning conversation would go a long way.",
+    "Variable pay criteria are unclear — I can't tell what actually moves the number.",
+    "Benefits are fine; base compensation is the concern, especially versus offers friends are getting.",
+    "Recognition is warm but rarely monetary; even small spot awards would land well.",
+    "The last revision cycle was below expectations with no explanation of how it was decided.",
+  ],
+  work: [
+    "The client work is genuinely interesting; scope creep is the recurring strain.",
+    "Staffing gaps mean long stretches of overtime on my current account.",
+    "I'd like more variety — I've been on the same account for a long time.",
+    "Demands are high but fair; better estimation up front would reduce the crunch.",
+  ],
+  positive: [
+    "Honestly one of the better teams I've worked with.",
+    "This has improved noticeably over the last two quarters.",
+    "Keep doing what you're doing here.",
+    "My mentor deserves a shout-out for this.",
+  ],
+};
+
+/* Band-level tendencies: [satisfaction shift, importance weight] per pillar.
+   Higher weight = more likely to be ranked as top priority. */
+const DEMO_PROFILE = {
+  "Early career":     { career:[ +0.2, 3.0], learning:[ +0.4, 3.4], people:[ +0.3, 2.2], culture:[ +0.4, 1.8], rewards:[ +0.1, 2.6], work:[ +0.1, 1.6] },
+  "Associate":        { career:[ -0.2, 3.4], learning:[  0.0, 2.6], people:[ +0.2, 2.0], culture:[ +0.2, 1.6], rewards:[ -0.4, 3.2], work:[  0.0, 1.8] },
+  "Senior Associate": { career:[ -0.6, 3.6], learning:[ -0.2, 2.2], people:[ +0.1, 1.9], culture:[  0.0, 1.5], rewards:[ -0.9, 3.8], work:[ -0.2, 2.0] },
+  "Lead":             { career:[ -0.3, 3.2], learning:[ -0.1, 2.0], people:[ +0.2, 2.2], culture:[ +0.1, 1.7], rewards:[ -0.5, 3.2], work:[ -0.3, 2.4] },
+  "Manager":          { career:[ +0.1, 2.8], learning:[  0.0, 1.8], people:[ +0.3, 2.4], culture:[ +0.3, 2.0], rewards:[ -0.2, 2.8], work:[ -0.2, 2.6] },
+  "Architect":        { career:[  0.0, 2.6], learning:[ +0.2, 2.6], people:[ +0.2, 2.0], culture:[ +0.2, 1.8], rewards:[ -0.3, 3.0], work:[ +0.1, 2.4] },
+  "Director":         { career:[ +0.5, 2.4], learning:[ +0.3, 1.6], people:[ +0.5, 2.6], culture:[ +0.6, 2.4], rewards:[ +0.2, 2.4], work:[ +0.2, 2.6] },
+  "Executive (VP+)":  { career:[ +0.8, 2.0], learning:[ +0.5, 1.4], people:[ +0.7, 2.8], culture:[ +0.8, 2.6], rewards:[ +0.5, 2.2], work:[ +0.4, 2.8] },
+  "Unmapped":         { career:[ 0,2.5], learning:[0,2.5], people:[0,2.5], culture:[0,2.5], rewards:[0,2.5], work:[0,2.5] },
+};
+const DEMO_BASE = { career: 6.7, learning: 7.2, people: 7.7, culture: 7.8, rewards: 6.4, work: 7.1 };
+
+function generateDemo() {
+  const responses = {};
+  const now = Date.now();
+  for (const person of ROSTER) {
+    const rng = mulberry32(hashStr(person.email));
+    if (rng() > 0.74) continue;                       // ~74% participation
+    const band = bandOf(person.role);
+    const prof = DEMO_PROFILE[band] || DEMO_PROFILE.Unmapped;
+    // satisfaction per pillar
+    const sat = {}, weights = [];
+    for (const k of PKEYS) {
+      const [shift, w] = prof[k];
+      const noise = (rng() + rng() + rng() - 1.5) * 1.9;   // approx normal
+      let s = DEMO_BASE[k] + shift + noise;
+      sat[k] = Math.max(1, Math.min(10, Math.round(s)));
+      weights.push([k, w * (0.6 + rng() * 0.8)]);
+    }
+    // importance ranks 1..6: weighted sampling without replacement
+    const ranks = {};
+    let pool = weights.slice();
+    for (let rank = 1; rank <= 6; rank++) {
+      const total = pool.reduce((a, x) => a + x[1], 0);
+      let pick = rng() * total, idx = 0;
+      for (let i = 0; i < pool.length; i++) { pick -= pool[i][1]; if (pick <= 0) { idx = i; break; } }
+      ranks[pool[idx][0]] = rank;
+      pool.splice(idx, 1);
+    }
+    // comments: required when sat <= 6; occasional positive otherwise
+    const comments = {};
+    for (const k of PKEYS) {
+      if (sat[k] <= 6) {
+        const arr = DEMO_COMMENTS[k];
+        comments[k] = arr[Math.floor(rng() * arr.length)];
+      } else if (rng() < 0.18) {
+        comments[k] = DEMO_COMMENTS.positive[Math.floor(rng() * DEMO_COMMENTS.positive.length)];
+      } else comments[k] = "";
+    }
+    responses[person.email] = {
+      email: person.email, name: person.name, role: person.role,
+      mentor: person.mentor, mentorEmail: person.mentorEmail,
+      submittedAt: now - Math.floor(rng() * 21) * 86400000,
+      ranks, sat, comments,
+    };
+  }
+  state.responses = responses;
+  state.isDemo = true;
+  state.source = "Demo data (generated for preview — replace with real check-in responses)";
+  save(); render();
+}
+
+/* ---------------- import: CSV / XLSX / JSON ---------------- */
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(cell); cell = "";
+      if (row.some(x => x.trim() !== "")) rows.push(row);
+      row = [];
+    } else cell += c;
+  }
+  row.push(cell);
+  if (row.some(x => x.trim() !== "")) rows.push(row);
+  return rows;
+}
+
+function normHeader(h) { return String(h || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+
+/* Map arbitrary headers to our fields: identity + {pillar}{rank|sat|comment} */
+function guessColumns(headers) {
+  const map = {};
+  headers.forEach((h, i) => {
+    const n = normHeader(h);
+    if (!map.email && (n === "email" || n.includes("respondentemail") || n === "emailaddress")) map.email = i;
+    else if (!map.name && (n === "name" || n === "respondentname" || n === "employeename" || n === "fullname")) map.name = i;
+    else if (!map.submittedAt && (n.includes("submitted") || n === "date" || n === "timestamp")) map.submittedAt = i;
+    else if (!map.role && (n === "role" || n === "designation" || n === "title")) map.role = i;
+    else if (!map.mentorEmail && n.includes("mentoremail")) map.mentorEmail = i;
+    else if (!map.mentor && (n === "mentor" || n === "mentorname")) map.mentor = i;
+    for (const k of PKEYS) {
+      if (n.startsWith(k) || n.includes(k)) {
+        if (n.includes("rank") || n.includes("importance") || n.includes("priority")) map[k + "_rank"] = map[k + "_rank"] ?? i;
+        else if (n.includes("sat") || n.includes("score")) map[k + "_sat"] = map[k + "_sat"] ?? i;
+        else if (n.includes("comment") || n.includes("note") || n.includes("feedback")) map[k + "_comment"] = map[k + "_comment"] ?? i;
+      }
+    }
+  });
+  return map;
+}
+
+let LAST_AUDIT = null;
+function rowsToResponses(headers, rows) {
+  const map = guessColumns(headers);
+  if (map.email === undefined) throw new Error("Couldn't find an email column. Include a header containing “email”.");
+  const satCols = PKEYS.filter(k => map[k + "_sat"] !== undefined);
+  if (!satCols.length) throw new Error("Couldn't find any satisfaction columns (e.g. “Career sat”, “rewards_sat”).");
+  // audit: exact header -> field mapping, plus row-level outcomes
+  const audit = LAST_AUDIT = { at: Date.now(), receivedRows: rows.length, mapping: [], unmappedHeaders: [],
+    skippedNoEmail: 0, skippedNoScores: 0, duplicates: [], notInRoster: [], outOfRange: [], missingRanks: 0, stored: 0 };
+  const fieldNames = { email: "Email", name: "Name", role: "Role", mentor: "Mentor", mentorEmail: "Mentor email", submittedAt: "Submitted at" };
+  const used = new Set(Object.values(map));
+  headers.forEach((h, i) => {
+    const f = Object.keys(map).find(k => map[k] === i);
+    if (f) {
+      const label = fieldNames[f] || (PLABEL[f.split("_")[0]] + " — " + f.split("_")[1]);
+      audit.mapping.push({ header: String(h), field: label });
+    } else if (String(h).trim()) audit.unmappedHeaders.push(String(h));
+  });
+  const seen = new Set();
+  let added = 0;
+  for (const r of rows) {
+    const email = String(r[map.email] || "").trim().toLowerCase();
+    if (!email || !email.includes("@")) { audit.skippedNoEmail++; continue; }
+    if (seen.has(email)) audit.duplicates.push(email); else seen.add(email);
+    if (!ROSTER_BY_EMAIL[email] && !audit.notInRoster.includes(email)) audit.notInRoster.push(email);
+    const roster = ROSTER_BY_EMAIL[email];
+    const sub = state.responses[email] || { ranks: {}, sat: {}, comments: {} };
+    sub.email = email;
+    sub.name = (map.name !== undefined && r[map.name]) || roster?.name || email.split("@")[0];
+    sub.role = (map.role !== undefined && r[map.role]) || roster?.role || "";
+    sub.mentor = (map.mentor !== undefined && r[map.mentor]) || roster?.mentor || "";
+    sub.mentorEmail = (map.mentorEmail !== undefined && r[map.mentorEmail]) || roster?.mentorEmail || "";
+    const d = map.submittedAt !== undefined ? Date.parse(r[map.submittedAt]) : NaN;
+    sub.submittedAt = isNaN(d) ? (sub.submittedAt || Date.now()) : d;
+    for (const k of PKEYS) {
+      if (map[k + "_sat"] !== undefined) {
+        const raw = r[map[k + "_sat"]], v = parseFloat(raw);
+        if (!isNaN(v)) {
+          if (v < 1 || v > 10) audit.outOfRange.push(email + " · " + PLABEL[k] + " satisfaction = " + raw);
+          sub.sat[k] = Math.max(1, Math.min(10, v));
+        }
+      }
+      if (map[k + "_rank"] !== undefined) {
+        const raw = r[map[k + "_rank"]], v = parseInt(raw, 10);
+        if (!isNaN(v)) {
+          if (v < 1 || v > 6) audit.outOfRange.push(email + " · " + PLABEL[k] + " rank = " + raw);
+          else sub.ranks[k] = v;
+        }
+      }
+      if (map[k + "_comment"] !== undefined) sub.comments[k] = String(r[map[k + "_comment"]] || "");
+    }
+    if (Object.keys(sub.sat).length) {
+      if (!Object.keys(sub.ranks).length) audit.missingRanks++;
+      state.responses[email] = sub; added++;
+    } else audit.skippedNoScores++;
+  }
+  audit.stored = Object.keys(state.responses).length;
+  return added;
+}
+
+/* Power Automate style JSON: array of { email, name, ..., career:{rank,sat,comment}, ... }
+   or flat { career_rank, career_sat, ... }. Accepts { value:[...] } / { rows:[...] } wrappers. */
+function jsonToResponses(data) {
+  let arr = Array.isArray(data) ? data : (data && (data.value || data.rows || data.responses));
+  if (!Array.isArray(arr)) throw new Error("Expected a JSON array of responses (or { value: [...] }).");
+  let added = 0;
+  for (const o of arr) {
+    if (!o) continue;
+    const email = String(o.email || o.Email || "").trim().toLowerCase();
+    if (!email.includes("@")) continue;
+    const roster = ROSTER_BY_EMAIL[email];
+    const sub = state.responses[email] || { ranks: {}, sat: {}, comments: {} };
+    sub.email = email;
+    sub.name = o.name || roster?.name || email.split("@")[0];
+    sub.role = o.role || roster?.role || "";
+    sub.mentor = o.mentor || roster?.mentor || "";
+    sub.mentorEmail = o.mentorEmail || roster?.mentorEmail || "";
+    const d = Date.parse(o.submittedAt || o.SubmittedAt || "");
+    sub.submittedAt = isNaN(d) ? (sub.submittedAt || Date.now()) : d;
+    for (const k of PKEYS) {
+      const nested = o[k];
+      if (nested && typeof nested === "object") {
+        if (nested.sat != null) sub.sat[k] = +nested.sat;
+        if (nested.rank != null) sub.ranks[k] = +nested.rank;
+        if (nested.comment != null) sub.comments[k] = String(nested.comment);
+      } else {
+        if (o[k + "_sat"] != null) sub.sat[k] = +o[k + "_sat"];
+        if (o[k + "_rank"] != null) sub.ranks[k] = +o[k + "_rank"];
+        if (o[k + "_comment"] != null) sub.comments[k] = String(o[k + "_comment"]);
+      }
+    }
+    if (Object.keys(sub.sat).length) { state.responses[email] = sub; added++; }
+  }
+  return added;
+}
+
+async function handleFile(file) {
+  const name = (file.name || "").toLowerCase();
+  if (name.endsWith(".json")) {
+    return jsonToResponses(JSON.parse(await file.text()));
+  }
+  if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".xlsm")) {
+    if (typeof XLSX === "undefined") throw new Error("The Excel reader didn't load (no internet?). Save the file as CSV and import that instead.");
+    const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: "" });
+    const rows = aoa.filter(r => r.some(c => String(c).trim() !== ""));
+    return rowsToResponses(rows[0], rows.slice(1));
+  }
+  const rows = parseCSV(await file.text());
+  if (rows.length < 2) throw new Error("The file has no data rows.");
+  return rowsToResponses(rows[0], rows.slice(1));
+}
+
+/* ---------------- analytics ---------------- */
+function mean(a) { return a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0; }
+function fmt(n, d = 1) { return (Math.round(n * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d); }
+function esc(s) { return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
+function personIndex(sub) {
+  // Importance-weighted satisfaction: weight = 7 − rank (rank 1 → weight 6).
+  let num = 0, den = 0;
+  for (const k of PKEYS) {
+    const s = sub.sat[k]; if (s == null) continue;
+    const w = sub.ranks[k] ? (7 - sub.ranks[k]) : 3.5;
+    num += s * w; den += w;
+  }
+  return den ? num / den : null;
+}
+
+function buildStats() {
+  const roster = rosterPool();
+  const subs = respondentPool();
+  const n = subs.length;
+  const st = {
+    n, rosterN: roster.length, participation: roster.length ? n / roster.length : 0,
+    pillars: {}, bands: {}, mentors: {}, attention: [], indices: [],
+    nonResponders: roster.filter(r => !state.responses[r.email]),
+  };
+  for (const k of PKEYS) st.pillars[k] = { sats: [], ranks: [], dist: Array(10).fill(0), low: 0, high: 0, comments: 0 };
+  for (const sub of subs) {
+    const band = bandOf(sub.role || ROSTER_BY_EMAIL[sub.email]?.role);
+    const idx = personIndex(sub);
+    if (idx != null) st.indices.push(idx);
+    if (!st.bands[band]) st.bands[band] = { n: 0, pillars: Object.fromEntries(PKEYS.map(k => [k, []])), indices: [] };
+    st.bands[band].n++; if (idx != null) st.bands[band].indices.push(idx);
+    const mentor = sub.mentor || "(no mentor)";
+    if (!st.mentors[mentor]) st.mentors[mentor] = { n: 0, indices: [], pillars: Object.fromEntries(PKEYS.map(k => [k, []])) };
+    st.mentors[mentor].n++; if (idx != null) st.mentors[mentor].indices.push(idx);
+    let lowCount = 0;
+    for (const k of PKEYS) {
+      const s = sub.sat[k];
+      if (s != null) {
+        st.pillars[k].sats.push(s);
+        st.pillars[k].dist[Math.max(0, Math.min(9, Math.round(s) - 1))]++;
+        if (s <= 6) { st.pillars[k].low++; lowCount++; }
+        if (s >= 9) st.pillars[k].high++;
+        st.bands[band].pillars[k].push(s);
+        st.mentors[mentor].pillars[k].push(s);
+      }
+      if (sub.ranks[k]) st.pillars[k].ranks.push(sub.ranks[k]);
+      if ((sub.comments[k] || "").trim()) st.pillars[k].comments++;
+    }
+    st.attention.push({ sub, idx: idx ?? 0, lowCount, band });
+  }
+  for (const k of PKEYS) {
+    const p = st.pillars[k];
+    p.meanSat = mean(p.sats);
+    p.meanRank = mean(p.ranks);
+    p.importance = p.ranks.length ? 7 - p.meanRank : 3.5;  // 1..6, higher = more important
+    p.lowPct = p.sats.length ? p.low / p.sats.length : 0;
+    p.highPct = p.sats.length ? p.high / p.sats.length : 0;
+  }
+  st.evpIndex = mean(st.indices);
+  st.atRisk = st.attention.filter(a => a.lowCount >= 3).length;
+  st.attention.sort((a, b) => (a.idx - b.idx) || (b.lowCount - a.lowCount));
+  return st;
+}
+
+function satColor(v) {
+  if (v == null || isNaN(v)) return "var(--bg)";
+  if (v < 5.5) return "var(--flag)";
+  if (v < 7)   return "var(--warn)";
+  return "var(--ok)";
+}
+function heatBg(v) {
+  if (v == null || isNaN(v)) return "#f5f1e8";
+  const t = Math.max(0, Math.min(1, (v - 4) / 5)); // 4..9 → 0..1
+  // flag tint → warn tint → ok tint
+  if (t < 0.5) { const u = t / 0.5; return mix("#f3d9cc", "#f6e9d2", u); }
+  const u = (t - 0.5) / 0.5; return mix("#f6e9d2", "#d7e7d8", u);
+}
+function mix(a, b, t) {
+  const pa = a.match(/\w\w/g).map(x => parseInt(x, 16));
+  const pb = b.match(/\w\w/g).map(x => parseInt(x, 16));
+  return "#" + pa.map((x, i) => Math.round(x + (pb[i] - x) * t).toString(16).padStart(2, "0")).join("");
+}
+
+/* ---------------- priority × satisfaction matrix (SVG) ---------------- */
+function matrixSVG(st) {
+  const W = 640, H = 440, padL = 52, padR = 20, padT = 26, padB = 46;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const xMin = 1, xMax = 6, yMin = 3, yMax = 10;
+  const X = v => padL + ((v - xMin) / (xMax - xMin)) * iw;
+  const Y = v => padT + (1 - (v - yMin) / (yMax - yMin)) * ih;
+  const xMid = 3.5, yMid = 7;
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Priority versus satisfaction matrix">`;
+  // quadrant fills
+  s += `<rect x="${X(xMid)}" y="${padT}" width="${X(xMax) - X(xMid)}" height="${Y(yMid) - padT}" fill="#ecf2ec"/>`;      // protect
+  s += `<rect x="${X(xMid)}" y="${Y(yMid)}" width="${X(xMax) - X(xMid)}" height="${Y(yMin) - Y(yMid)}" fill="#f8ebe4"/>`; // fix first
+  s += `<rect x="${padL}" y="${Y(yMid)}" width="${X(xMid) - padL}" height="${Y(yMin) - Y(yMid)}" fill="#f6eddd"/>`;       // monitor
+  // quadrant labels
+  const qs = [
+    [X(xMax) - 8, padT + 16, "end", "PROTECT — high stakes, going well", "#3a6b3e"],
+    [X(xMax) - 8, Y(yMin) - 10, "end", "FIX FIRST — high stakes, under-delivering", "#96482a"],
+    [padL + 8, padT + 16, "start", "MAINTAIN — lower stakes, going well", "#8a8f99"],
+    [padL + 8, Y(yMin) - 10, "start", "MONITOR — lower stakes, under-delivering", "#8a6020"],
+  ];
+  for (const [x, y, anc, txt, col] of qs)
+    s += `<text x="${x}" y="${y}" text-anchor="${anc}" font-size="10.5" font-weight="800" letter-spacing="1" fill="${col}">${txt}</text>`;
+  // gridlines + axes
+  s += `<line x1="${X(xMid)}" y1="${padT}" x2="${X(xMid)}" y2="${Y(yMin)}" stroke="#c9c2b2" stroke-dasharray="4 4"/>`;
+  s += `<line x1="${padL}" y1="${Y(yMid)}" x2="${X(xMax)}" y2="${Y(yMid)}" stroke="#c9c2b2" stroke-dasharray="4 4"/>`;
+  s += `<line x1="${padL}" y1="${Y(yMin)}" x2="${X(xMax)}" y2="${Y(yMin)}" stroke="#8a8f99"/>`;
+  s += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${Y(yMin)}" stroke="#8a8f99"/>`;
+  for (let v = yMin; v <= yMax; v++)
+    s += `<text x="${padL - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="10.5" fill="#8a8f99">${v}</text>`;
+  for (let v = xMin; v <= xMax; v++)
+    s += `<text x="${X(v)}" y="${Y(yMin) + 16}" text-anchor="middle" font-size="10.5" fill="#8a8f99">${v}</text>`;
+  s += `<text x="${(padL + W - padR) / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#4a5363">Importance to employees → (from average rank)</text>`;
+  s += `<text x="14" y="${(padT + Y(yMin)) / 2}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#4a5363" transform="rotate(-90 14 ${(padT + Y(yMin)) / 2})">Average satisfaction →</text>`;
+  // points
+  for (const p of PILLARS) {
+    const d = st.pillars[p.key];
+    if (!d.sats.length) continue;
+    const cx = X(Math.max(xMin, Math.min(xMax, d.importance)));
+    const cy = Y(Math.max(yMin, Math.min(yMax, d.meanSat)));
+    const r = 9 + d.lowPct * 16;   // bigger bubble = more detractors
+    const col = d.importance >= xMid && d.meanSat < yMid ? "#b8623f" : (d.meanSat >= yMid ? "#3b6e58" : "#c08a3e");
+    s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" fill-opacity="0.82" stroke="#fff" stroke-width="2"/>`;
+    const above = cy - r - 8 > padT + 20;
+    s += `<text x="${cx}" y="${above ? cy - r - 6 : cy + r + 13}" text-anchor="middle" font-size="12" font-weight="800" fill="#1e2a3a">${p.label}</text>`;
+    s += `<text x="${cx}" y="${cy + 3.5}" text-anchor="middle" font-size="9.5" font-weight="800" fill="#fff">${fmt(d.meanSat)}</text>`;
+  }
+  s += `</svg>`;
+  return s;
+}
+
+/* ---------------- comment themes ---------------- */
+const THEMES = [
+  ["Pay & compensation", /\bpay\b|salary|compensation|comp\b|band|market|revision|hike|increment|monetar/i],
+  ["Promotion & growth", /promot|next level|career path|framework|ladder|growth|advance/i],
+  ["Workload & hours", /workload|overtime|hours|crunch|burn|scope creep|staffing|bandwidth|stretch/i],
+  ["Manager & leadership", /manager|leader|leadership|decision|communicat/i],
+  ["Training & upskilling", /training|certif|learn|course|upskill|shadow|budget/i],
+  ["Recognition", /recognit|apprecia|award|shout/i],
+  ["Hybrid & flexibility", /hybrid|remote|wfh|office|flexib/i],
+  ["Clients & variety", /client|account|project|variety|estimat/i],
+];
+function allComments() {
+  const out = [];
+  for (const sub of respondentPool()) {
+    for (const k of PKEYS) {
+      const c = (sub.comments[k] || "").trim();
+      if (!c) continue;
+      out.push({ sub, pillar: k, sat: sub.sat[k], text: c, band: bandOf(sub.role || ROSTER_BY_EMAIL[sub.email]?.role) });
+    }
+  }
+  out.sort((a, b) => (a.sat ?? 99) - (b.sat ?? 99));
+  return out;
+}
+
+/* ---------------- narrative ---------------- */
+function buildNarrative(st) {
+  const items = [];
+  const byNeed = PILLARS.map(p => ({ p, d: st.pillars[p.key] })).filter(x => x.d.sats.length);
+  if (!byNeed.length) return items;
+  const fixFirst = byNeed.filter(x => x.d.importance >= 3.5 && x.d.meanSat < 7).sort((a, b) => (b.d.importance - b.d.meanSat) - (a.d.importance - a.d.meanSat));
+  const best = byNeed.slice().sort((a, b) => b.d.meanSat - a.d.meanSat)[0];
+  const worst = byNeed.slice().sort((a, b) => a.d.meanSat - b.d.meanSat)[0];
+
+  if (fixFirst.length) {
+    const f = fixFirst[0];
+    items.push(`<span class="tag fix">Fix first</span><b>${f.p.label}</b> is the biggest gap: employees rank it among their top priorities (importance ${fmt(f.d.importance)}/6) but score it just <b>${fmt(f.d.meanSat)}/10</b>, with ${Math.round(f.d.lowPct * 100)}% at 6 or below. This is where a visible intervention this quarter earns the most trust per rupee spent.`);
+    if (fixFirst[1]) {
+      const g = fixFirst[1];
+      items.push(`<span class="tag fix">Fix first</span><b>${g.p.label}</b> is the second priority gap (${fmt(g.d.meanSat)}/10 at importance ${fmt(g.d.importance)}/6). Sequence it behind ${fixFirst[0].p.label} rather than diluting effort across both.`);
+    }
+  }
+  items.push(`<span class="tag protect">Protect</span><b>${best.p.label}</b> is the strongest pillar at <b>${fmt(best.d.meanSat)}/10</b> (${Math.round(best.d.highPct * 100)}% score it 9–10). Name it explicitly in employer branding and internal comms — it is the EVP story that is already true.`);
+
+  // weakest band
+  const bandRows = Object.entries(st.bands).filter(([, b]) => b.indices.length >= 5)
+    .map(([name, b]) => ({ name, idx: mean(b.indices), n: b.indices.length })).sort((a, b) => a.idx - b.idx);
+  if (bandRows.length >= 2) {
+    const w = bandRows[0], top = bandRows[bandRows.length - 1];
+    items.push(`<span class="tag watch">Watch</span>The experience gap by career stage is real: <b>${w.name}</b> has the lowest weighted EVP index (<b>${fmt(w.idx)}</b>, n=${w.n}) versus ${fmt(top.idx)} for ${top.name}. ${w.name === "Senior Associate" ? "This is your delivery backbone and the flight-risk zone for competing offers — prioritize comp-band transparency and promotion visibility here." : "Design interventions for this cohort specifically rather than company-wide averages."}`);
+  }
+  // mentor cohorts
+  const mentorRows = Object.entries(st.mentors).filter(([m, v]) => m !== "(no mentor)" && v.indices.length >= 3)
+    .map(([name, v]) => ({ name, idx: mean(v.indices), n: v.indices.length })).sort((a, b) => a.idx - b.idx);
+  const flagged = mentorRows.filter(r => r.idx < 6.2);
+  if (flagged.length) {
+    items.push(`<span class="tag watch">Watch</span><b>${flagged.length} mentor cohort${flagged.length > 1 ? "s" : ""}</b> (${flagged.slice(0, 3).map(f => esc(f.name)).join(", ")}${flagged.length > 3 ? "…" : ""}) average below 6.2 on the weighted index. Treat this as a signal about the cohort's shared context (account, team, workload) before treating it as a mentor performance question.`);
+  }
+  // participation
+  const part = Math.round(st.participation * 100);
+  if (part < 100) {
+    items.push(`<span class="tag act">Act</span>Participation stands at <b>${part}%</b> (${st.n} of ${st.rosterN}); ${st.nonResponders.length} people haven't responded. Silence is data too — non-response clusters often overlap with disengagement. Route reminder nudges through mentors (each owns ≤9 mentees) rather than one mass email.`);
+  }
+  const hipoRisk = respondentPool().filter(sub => {
+    if (!isHipo(sub.email)) return false;
+    const idx = personIndex(sub);
+    return idx != null && (idx < 6.5 || PKEYS.filter(k => sub.sat[k] != null && sub.sat[k] <= 6).length >= 2);
+  });
+  if (hipoRisk.length) {
+    items.push(`<span class="tag fix">Fix first</span><b>${hipoRisk.length} of your ${ROSTER.filter(r=>r.hipo).length} HiPos</b> show weak EVP signals (index under 6.5 or two-plus pillars at ≤6). These are the people you've already decided to bet on — losing one costs a succession plan, not just a seat. Click ★ HiPo above to see their full picture and route each into a follow-up task this week.`);
+  }
+  const tpr = topPerformersAtRisk();
+  if (tpr.length) {
+    items.push(`<span class="tag fix">Fix first</span><b>${tpr.length} top-rated performers</b> (rating 4–5) show a weighted index under 6.5 or two-plus pillars at ≤6. These are the exits that hurt most and get counter-offered elsewhere first — put them at the front of the attention queue and pair each follow-up task with a concrete retention action, not just a conversation.`);
+  }
+  if (st.atRisk > 0) {
+    items.push(`<span class="tag act">Act</span><b>${st.atRisk} employees</b> scored 6 or below on three or more pillars. These are your highest-probability regrettable exits. The attention list below is ordered for exactly this — commit to a mentor-led development conversation for each within 14 days, using the check-in's tagging workflow.`);
+  }
+  items.push(`<span class="tag act">Act</span>Close the loop visibly. The single biggest driver of next cycle's participation is whether people saw something change after this one. Publish a short "you said → we did" note against the top two Fix First pillars within 30 days.`);
+  return items;
+}
+
+/* ---------------- render ---------------- */
+function setHeaderMode() {
+  const admin = isAdmin(), signed = !!whoAmI();
+  const show = (id, yes) => { const el = document.getElementById(id); if (el) el.classList.toggle("hidden", !yes); };
+  show("btnSync", admin);
+  show("btnPrint", admin);
+  const gs = document.getElementById("globalSearch");
+  if (gs && gs.parentElement) gs.parentElement.classList.toggle("hidden", !admin);
+  // signed-in indicator / sign out
+  let el = document.getElementById("whoami");
+  if (!el) {
+    el = document.createElement("span"); el.id = "whoami";
+    el.style.cssText = "font-size:12px;color:var(--ink-faint);font-weight:700;align-self:center";
+    const actions = document.querySelector(".hdr-actions");
+    if (actions) actions.appendChild(el);
+  }
+  el.innerHTML = signed ? `${esc(whoAmI().name)}${admin ? " · HR" : ""} · <a href="#" onclick="signOut();return false" style="color:var(--accent)">Sign out</a>` : "";
+}
+
+function loginScreen() {
+  return `
+    <div style="max-width:460px;margin:8vh auto 0;text-align:center">
+      <div class="brand-mark" style="margin:0 auto 14px;width:44px;height:44px;font-size:20px;border-radius:12px">A</div>
+      <h1 class="page-title" style="font-size:28px">EVP Insights</h1>
+      <p class="page-lede" style="margin:0 auto 22px">Sign in with your Altudo email. HR admins see the complete dashboard; mentors and managers see their own tasks and their mentees' check-ins.</p>
+      <div class="card" style="display:grid;gap:10px;text-align:left">
+        <label style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)">Work email</label>
+        <input type="email" id="meEmail" placeholder="you@altudo.co" autocomplete="email"
+          style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;font-family:var(--body)">
+        <button class="btn primary" id="meGo" style="padding:11px">Continue</button>
+      </div>
+      <p style="font-size:11.5px;color:var(--ink-faint);margin-top:14px">Access is matched against the employee roster.</p>
+    </div>`;
+}
+
+function renderRestricted() {
+  const app = document.getElementById("app");
+  const me = whoAmI();
+  const mentees = ROSTER.filter(r => (r.mentorEmail || "").toLowerCase() === me.email);
+  const myOpen = state.tasks.filter(t => (t.assigneeEmail || "").toLowerCase() === me.email && t.status !== "done").length;
+  app.innerHTML = `
+    <h1 class="page-title">Hello, ${esc(me.name.split(" ")[0])}</h1>
+    <p class="page-lede">${mentees.length ? `Your cohort of ${mentees.length} mentee${mentees.length > 1 ? "s" : ""} and ` : ""}${myOpen ? `${myOpen} open task${myOpen > 1 ? "s" : ""} assigned to you.` : "everything assigned to you, in one place."}</p>
+    ${myTasksSection(true)}
+    ${myMenteesSection()}
+    ${!mentees.length && !state.tasks.some(t => (t.assigneeEmail || "").toLowerCase() === me.email) ? `
+      <div class="empty-card"><h2>Nothing here yet</h2>
+      <p>No mentees are mapped to your email and no follow-up tasks have been assigned to you. If that seems wrong, contact the HR team.</p></div>` : ""}
+    <div class="foot-note">You're seeing your own workspace. The full dashboard is available to the HR team.</div>`;
+  wireMyTasks();
+}
+
+function render() {
+  setHeaderMode();
+  const app = document.getElementById("app");
+  if (!whoAmI()) { app.innerHTML = loginScreen(); wireMyTasks(); return; }
+  if (!isAdmin()) { renderRestricted(); return; }
+  const subs = Object.values(state.responses);
+  if (!subs.length) {
+    app.innerHTML = `
+      <h1 class="page-title">EVP Insights</h1>
+      <p class="page-lede">Turn EVP Check-In responses from all six pillars into decisions: what to fix first, what to protect, which cohorts need attention, and who needs a conversation this week.</p>
+      <div class="empty-card">
+        <h2>No responses loaded yet</h2>
+        <p>The roster of <b>${ROSTER.length} employees</b> is already built in. Connect the Power Automate flow that reads your check-in's Excel table and the dashboard keeps itself current — or load demo data to preview every insight first.</p>
+        <button class="btn primary" onclick="openConnect()">Connect Power Automate Excel</button>
+        <button class="btn" onclick="generateDemo()">Load demo data</button>
+      </div>`;
+    wireMyTasks();
+    return;
+  }
+  const st = buildStats();
+  const part = Math.round(st.participation * 100);
+  const fixPillar = PILLARS.map(p => ({ p, d: st.pillars[p.key] }))
+    .filter(x => x.d.sats.length && x.d.importance >= 3.5 && x.d.meanSat < 7)
+    .sort((a, b) => (b.d.importance - b.d.meanSat) - (a.d.importance - a.d.meanSat))[0];
+
+  let html = `
+    <h1 class="page-title">EVP Insights</h1>
+    <p class="page-lede">What ${st.n} colleagues told us across the six EVP pillars — weighted by what matters most to them.</p>
+    ${state.isDemo ? `<div style="background:var(--warn-tint);border:1px solid #ecd9ba;color:var(--warn-ink);border-radius:12px;padding:10px 16px;font-size:13px;font-weight:700;margin:6px 0 14px">⚠ You are looking at DEMO data — every number on this page is fake. <a href="#" onclick="syncFromExcel({});return false" style="color:var(--warn-ink);text-decoration:underline">Sync from Excel</a> to replace it with real responses.</div>` : ""}
+    <div class="data-meta">Source: <b>${esc(state.source || "Imported responses")}</b> · Roster: ${ROSTER.length} employees${state.lastSync ? " · Last sync " + new Date(state.lastSync).toLocaleString() + " · auto-refreshes every minute" : ""} · <a href="#" onclick="openConnect();return false" style="color:var(--accent);font-weight:700">Data settings</a> · <a href="#" onclick="openAudit();return false" style="color:var(--accent);font-weight:700">Data check</a></div>
+    ${ratingBarHTML()}
+
+    <div class="kpi-row">
+      <div class="kpi ${part >= 75 ? "tone-ok" : part >= 55 ? "tone-warn" : "tone-flag"}">
+        <div class="k-label">Participation</div>
+        <div class="k-value">${part}<small>%</small></div>
+        <div class="k-note">${st.n} of ${st.rosterN}${ui.ratingSel.length ? " (filtered)" : ""} · ${st.nonResponders.length} pending</div>
+      </div>
+      <div class="kpi ${st.evpIndex >= 7.2 ? "tone-ok" : st.evpIndex >= 6.3 ? "tone-warn" : "tone-flag"}">
+        <div class="k-label">Weighted EVP index</div>
+        <div class="k-value">${fmt(st.evpIndex)}<small>/10</small></div>
+        <div class="k-note">Satisfaction weighted by each person's own priority ranking</div>
+      </div>
+      <div class="kpi ${fixPillar ? "tone-flag" : "tone-ok"}">
+        <div class="k-label">Fix-first pillar</div>
+        <div class="k-value" style="font-size:24px; padding-top:5px">${fixPillar ? fixPillar.p.label : "None"}</div>
+        <div class="k-note">${fixPillar ? `High importance (${fmt(fixPillar.d.importance)}/6), low satisfaction (${fmt(fixPillar.d.meanSat)}/10)` : "No high-importance pillar is under 7/10"}</div>
+      </div>
+      <div class="kpi ${st.atRisk === 0 ? "tone-ok" : st.atRisk <= st.n * 0.08 ? "tone-warn" : "tone-flag"}">
+        <div class="k-label">Attention cases</div>
+        <div class="k-value">${st.atRisk}</div>
+        <div class="k-note">People scoring ≤6 on three or more pillars</div>
+      </div>
+    </div>
+
+    ${myTasksSection(false)}
+    ${myMenteesSection()}
+
+    <section class="section">
+      <div class="section-eyebrow">The strategist's read</div>
+      <h2 class="section-title">What this data is telling leadership</h2>
+      <p class="section-sub">Auto-generated from the numbers below — a starting point for the conversation, not the end of it.</p>
+      <div class="narrative"><ol>${buildNarrative(st).map(x => `<li>${x}</li>`).join("")}</ol></div>
+    </section>
+
+    <section class="section">
+      <div class="section-eyebrow">Where to invest</div>
+      <h2 class="section-title">Priority × satisfaction matrix</h2>
+      <p class="section-sub">Each pillar plotted by how much employees say it matters (their 1–6 ranking, averaged) against how satisfied they are with it. Bubble size = share scoring 6 or below. Bottom-right is where effort pays back fastest.</p>
+      <div class="card"><div class="svg-wrap">${matrixSVG(st)}</div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-eyebrow">Pillar detail</div>
+      <h2 class="section-title">The six pillars, side by side</h2>
+      <div class="pillar-grid">${PILLARS.map(p => pillarCard(p, st)).join("")}</div>
+    </section>
+
+    <section class="section">
+      <div class="section-eyebrow">Segments</div>
+      <h2 class="section-title">Satisfaction by career stage</h2>
+      <p class="section-sub">Average satisfaction per pillar for each role band. The pattern to look for: where does the experience dip as people grow — and is your delivery backbone (Senior Associates and Leads) being held?</p>
+      <div class="card heat-wrap">${heatmapHTML(st)}</div>
+    </section>
+
+    ${ratingHeatHTML()}
+
+    <div class="section grid-2">
+      <section>
+        <div class="section-eyebrow">Cohorts</div>
+        <h2 class="section-title">Mentor cohorts</h2>
+        <p class="section-sub">Weighted index by mentor (cohorts of 3+ respondents). Low cohorts usually share context — an account, a team, a crunch — worth investigating before anything else.</p>
+        <div class="card" style="max-height:460px; overflow:auto">${mentorTableHTML(st)}</div>
+      </section>
+      <section>
+        <div class="section-eyebrow">Individuals</div>
+        <h2 class="section-title">Attention list</h2>
+        <p class="section-sub">Lowest weighted index first. Use the check-in's tagging workflow to route each to their mentor for a development conversation.</p>
+        <div class="card" style="max-height:460px; overflow:auto">${attentionHTML(st)}</div>
+      </section>
+    </div>
+
+    <section class="section">
+      <div class="section-eyebrow">People</div>
+      <h2 class="section-title">Employee lookup</h2>
+      <p class="section-sub">Search anyone across the roster — see their full check-in against company averages, nudge pending people, or assign a follow-up straight from their profile.</p>
+      <div id="peopleWrap">${directoryHTML()}</div>
+    </section>
+
+    <section class="section">
+      <div class="section-eyebrow">Follow-through</div>
+      <h2 class="section-title">Follow-up tasks</h2>
+      <p class="section-sub">Every low score needs an owner, an action and a date. Tasks live here; “Email” drafts the hand-off to the assignee in your mail client. Export to CSV for your HR tracker.</p>
+      ${tasksHTML()}
+    </section>
+
+    <section class="section">
+      <div class="section-eyebrow">Voices</div>
+      <h2 class="section-title">What people wrote</h2>
+      <p class="section-sub">${allComments().length} comments, lowest scores first. Filter by pillar, band or theme — themes are keyword-matched, so read the underlying comments before acting.</p>
+      ${commentsHTML(st)}
+    </section>
+
+    <div class="foot-note">EVP Insights renders entirely in this browser — nothing is uploaded anywhere. Print to PDF for the leadership pack.</div>
+  `;
+  app.innerHTML = html;
+  wireFilters();
+  wirePeople();
+  wireMyTasks();
+  wireRatingBar();
+}
+
+function pillarCard(p, st) {
+  const d = st.pillars[p.key];
+  if (!d.sats.length) return "";
+  const maxD = Math.max(...d.dist, 1);
+  const rankPct = ((7 - d.importance) - 1) / 5;  // meanRank position
+  return `<div class="pillar-card">
+    <div class="pillar-head">
+      <span class="pillar-name">${p.label}</span>
+      <span class="pillar-sat" style="color:${satColor(d.meanSat)}">${fmt(d.meanSat)}<span style="font-size:12px;color:var(--ink-faint)">/10</span></span>
+    </div>
+    <div class="pillar-meta">${p.desc} · avg importance rank ${fmt(d.meanRank)} of 6</div>
+    <div class="bar-row"><span style="width:78px">≤6 (concern)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.lowPct * 100)}%;background:var(--flag)"></div></div>
+      <span style="width:34px;text-align:right">${Math.round(d.lowPct * 100)}%</span></div>
+    <div class="bar-row"><span style="width:78px">9–10 (strong)</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.highPct * 100)}%;background:var(--ok)"></div></div>
+      <span style="width:34px;text-align:right">${Math.round(d.highPct * 100)}%</span></div>
+    <div class="dist">${d.dist.map((v, i) => `<span class="${i <= 5 ? "low" : ""}" style="height:${Math.max(4, Math.round(v / maxD * 100))}%" title="${i + 1}: ${v}"></span>`).join("")}</div>
+    <div class="dist-x"><span>1</span><span>5</span><span>10</span></div>
+    <div style="margin-top:9px"><span class="chip">${d.comments} comments</span>
+      ${d.importance >= 3.5 && d.meanSat < 7 ? '<span class="chip flag">Fix first</span>' : d.meanSat >= 7.5 ? '<span class="chip ok">Strength</span>' : d.meanSat < 7 ? '<span class="chip warn">Monitor</span>' : ""}</div>
+  </div>`;
+}
+
+function heatmapHTML(st) {
+  const bands = BAND_ORDER.filter(b => st.bands[b] && st.bands[b].n > 0);
+  let h = `<table class="heat"><tr><th style="text-align:left">Career stage</th>${PILLARS.map(p => `<th>${p.label}</th>`).join("")}<th>Weighted index</th></tr>`;
+  for (const b of bands) {
+    const bd = st.bands[b];
+    h += `<tr><td class="rowhead">${b}<span class="hm-n" style="display:block;font-size:10px;color:var(--ink-faint)">n = ${bd.n}</span></td>`;
+    for (const p of PILLARS) {
+      const v = bd.pillars[p.key].length ? mean(bd.pillars[p.key]) : null;
+      h += `<td style="background:${heatBg(v)};font-weight:700;color:#1e2a3a">${v == null ? "—" : fmt(v)}</td>`;
+    }
+    const idx = bd.indices.length ? mean(bd.indices) : null;
+    h += `<td style="background:${heatBg(idx)};font-weight:800;color:#1e2a3a">${idx == null ? "—" : fmt(idx)}</td></tr>`;
+  }
+  // company row
+  h += `<tr><td class="rowhead">All respondents<span class="hm-n">n = ${st.n}</span></td>`;
+  for (const p of PILLARS) h += `<td style="background:${heatBg(st.pillars[p.key].meanSat)};font-weight:800;color:#1e2a3a">${fmt(st.pillars[p.key].meanSat)}</td>`;
+  h += `<td style="background:${heatBg(st.evpIndex)};font-weight:800;color:#1e2a3a">${fmt(st.evpIndex)}</td></tr></table>`;
+  return h;
+}
+
+function mentorTableHTML(st) {
+  const rows = Object.entries(st.mentors)
+    .filter(([m, v]) => m !== "(no mentor)" && v.n >= 3)
+    .map(([name, v]) => {
+      const weakest = PILLARS.map(p => ({ p, m: v.pillars[p.key].length ? mean(v.pillars[p.key]) : null }))
+        .filter(x => x.m != null).sort((a, b) => a.m - b.m)[0];
+      return { name, n: v.n, idx: v.indices.length ? mean(v.indices) : null, weakest };
+    })
+    .sort((a, b) => (a.idx ?? 99) - (b.idx ?? 99));
+  if (!rows.length) return `<p style="font-size:13px">No mentor cohort has 3+ respondents yet.</p>`;
+  return `<table class="data"><tr><th>Mentor</th><th>n</th><th>Index</th><th>Weakest pillar</th></tr>` +
+    rows.map(r => `<tr><td><b>${esc(r.name)}</b></td><td>${r.n}</td>
+      <td><span class="chip ${r.idx < 6.2 ? "flag" : r.idx < 7 ? "warn" : "ok"}">${fmt(r.idx)}</span></td>
+      <td>${r.weakest ? `${r.weakest.p.label} (${fmt(r.weakest.m)})` : "—"}</td></tr>`).join("") + `</table>`;
+}
+
+function attentionHTML(st) {
+  const rows = st.attention.filter(a => a.lowCount >= 2 || a.idx < 6).slice(0, 25);
+  if (!rows.length) return `<p style="font-size:13px">No one currently meets the attention criteria. Good sign.</p>`;
+  return `<table class="data"><tr><th>Person</th><th>Index · low pillars</th><th></th></tr>` +
+    rows.map(a => {
+      const lows = PKEYS.filter(k => a.sub.sat[k] != null && a.sub.sat[k] <= 6).map(k => PLABEL[k]);
+      return `<tr><td><b>${esc(a.sub.name)}</b>${isHipo(a.sub.email) ? ' <span class="chip" style="border-color:#e2c98a;background:#faf3df;color:#8a6020">★</span>' : ""} <span class="chip ${ratingChipClass(ratingOf(a.sub.email))}">${esc(ratingOf(a.sub.email) === "Unrated" ? "—" : ratingOf(a.sub.email))}</span><br><span style="font-size:11.5px;color:var(--ink-faint)">${esc(a.sub.role || "")} · mentor ${esc(a.sub.mentor || "—")}</span></td>
+        <td><span class="chip ${a.idx < 5.5 ? "flag" : "warn"}">${fmt(a.idx)}</span><br><span style="font-size:11px;color:var(--ink-faint)">${lows.join(", ") || "—"}</span></td>
+        <td style="white-space:nowrap;text-align:right"><button class="btn small" onclick="openPerson('${a.sub.email}')">View</button> <button class="btn small" onclick="openTaskModal('${a.sub.email}')">Assign</button></td></tr>`;
+    }).join("") + `</table>`;
+}
+
+function commentsHTML(st) {
+  const comments = allComments();
+  const bands = BAND_ORDER.filter(b => st.bands[b]);
+  const themeCounts = THEMES.map(([label, rx]) => [label, comments.filter(c => rx.test(c.text)).length]).filter(x => x[1] > 0);
+  return `
+    <div class="filters">
+      <select id="fPillar"><option value="all">All pillars</option>${PILLARS.map(p => `<option value="${p.key}" ${ui.pillar === p.key ? "selected" : ""}>${p.label}</option>`).join("")}</select>
+      <select id="fBand"><option value="all">All career stages</option>${bands.map(b => `<option ${ui.band === b ? "selected" : ""}>${b}</option>`).join("")}</select>
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="fLow" ${ui.onlyLow ? "checked" : ""}> Scores ≤6 only</label>
+      <input type="search" id="fSearch" placeholder="Search comments…" value="${esc(ui.search)}">
+    </div>
+    <div class="theme-chips">${themeCounts.map(([t, n]) => `<span class="chip ${ui.theme === t ? "active" : ""}" data-theme="${esc(t)}">${t} · ${n}</span>`).join("")}</div>
+    <div id="commentList">${renderCommentList(comments)}</div>`;
+}
+
+function filteredComments(comments) {
+  return comments.filter(c => {
+    if (ui.pillar !== "all" && c.pillar !== ui.pillar) return false;
+    if (ui.band !== "all" && c.band !== ui.band) return false;
+    if (ui.onlyLow && !(c.sat != null && c.sat <= 6)) return false;
+    if (ui.theme) { const th = THEMES.find(t => t[0] === ui.theme); if (th && !th[1].test(c.text)) return false; }
+    if (ui.search && !c.text.toLowerCase().includes(ui.search.toLowerCase())) return false;
+    return true;
+  });
+}
+function renderCommentList(comments) {
+  const list = filteredComments(comments);
+  const shown = list.slice(0, ui.commentLimit);
+  let h = shown.map(c => `<div class="comment">
+    <div class="c-top"><b>${esc(c.sub.name)}</b> · ${esc(c.sub.role || "")}
+      <span class="chip">${PLABEL[c.pillar]}</span>
+      ${c.sat != null ? `<span class="chip ${c.sat <= 4 ? "flag" : c.sat <= 6 ? "warn" : "ok"}">${c.sat}/10</span>` : ""}</div>
+    <div class="c-body">${esc(c.text)}</div></div>`).join("");
+  if (!list.length) h = `<p style="font-size:13px;color:var(--ink-faint)">No comments match these filters.</p>`;
+  if (list.length > shown.length) h += `<div class="load-more"><button class="btn small" id="btnMore">Show ${Math.min(20, list.length - shown.length)} more (${list.length - shown.length} left)</button></div>`;
+  return h;
+}
+function wireFilters() {
+  const rerenderComments = () => { document.getElementById("commentList").innerHTML = renderCommentList(allComments()); wireMore(); };
+  const wireMore = () => { const b = document.getElementById("btnMore"); if (b) b.onclick = () => { ui.commentLimit += 20; rerenderComments(); }; };
+  const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  on("fPillar", "change", e => { ui.pillar = e.target.value; ui.commentLimit = 12; rerenderComments(); });
+  on("fBand", "change", e => { ui.band = e.target.value; ui.commentLimit = 12; rerenderComments(); });
+  on("fLow", "change", e => { ui.onlyLow = e.target.checked; ui.commentLimit = 12; rerenderComments(); });
+  on("fSearch", "input", e => { ui.search = e.target.value; ui.commentLimit = 12; rerenderComments(); });
+  document.querySelectorAll(".theme-chips .chip").forEach(ch => ch.addEventListener("click", () => {
+    ui.theme = ui.theme === ch.dataset.theme ? "" : ch.dataset.theme; ui.commentLimit = 12;
+    document.querySelectorAll(".theme-chips .chip").forEach(c => c.classList.toggle("active", c.dataset.theme === ui.theme));
+    rerenderComments();
+  }));
+  wireMore();
+}
+
+
+/* Accepts whatever the Power Automate "return responses" flow sends back:
+   a raw array, or { value:[...] } / { rows:[...] } / { body:[...] } wrappers.
+   Flat rows (Excel columns, any naming) go through the same header-guessing
+   as file imports; nested { career:{rank,sat,comment} } payloads are handled
+   directly. */
+function autoImportJSON(data) {
+  let arr = Array.isArray(data) ? data : (data && (data.value || data.rows || data.responses || data.body));
+  if (arr && !Array.isArray(arr) && Array.isArray(arr.value)) arr = arr.value; // { body: { value: [...] } }
+  if (!Array.isArray(arr) || !arr.length) throw new Error("The link returned no response rows.");
+  const nested = arr.some(o => o && PKEYS.some(k => o[k] && typeof o[k] === "object"));
+  if (nested) return jsonToResponses(arr);
+  // flat objects -> table -> header guessing
+  const headers = Object.keys(Object.assign({}, ...arr.map(o => o || {})));
+  const rows = arr.map(o => headers.map(h => (o && o[h] != null) ? o[h] : ""));
+  return rowsToResponses(headers, rows);
+}
+
+async function syncFromExcel(opts) {
+  opts = opts || {};
+  const url = (state.readUrl || "").trim();
+  if (!url) { if (!opts.silent) openConnect(); return; }
+  const btn = document.getElementById("btnSync");
+  if (btn) { btn.disabled = true; btn.textContent = "Syncing…"; }
+  try {
+    const res = await fetch(url, { method: "GET" });
+    const bodyText = await res.text();
+    if (!res.ok) {
+      let detail = "";
+      try { const j = JSON.parse(bodyText); detail = j.error?.message || j.message || bodyText; } catch { detail = bodyText; }
+      throw new Error("the flow returned status " + res.status + (detail ? " — " + String(detail).slice(0, 220) : ""));
+    }
+    if (!bodyText.trim()) {
+      throw new Error("the flow replied with an EMPTY body (status " + res.status + "). This means the flow has no Response action, or its Body field is blank. Fix: add a Response action as the last step, Status 200, and set Body = the 'value' output from List rows present in a table.");
+    }
+    let payload;
+    try { payload = JSON.parse(bodyText); }
+    catch { throw new Error("the flow's reply isn't valid JSON. It starts with: \"" + bodyText.slice(0, 120) + "…\". Set the Response Body to the 'value' output of List rows (and header Content-Type: application/json)."); }
+    // The Excel is the single source of truth: rebuild from scratch on every
+    // sync so stale/demo/deleted rows can never linger and skew the numbers.
+    const previous = state.responses;
+    state.responses = {};
+    let added;
+    try { added = autoImportJSON(payload); }
+    catch (err) { state.responses = previous; throw err; }   // keep old data if the payload was unusable
+    state.isDemo = false;
+    state.audit = LAST_AUDIT;
+    state.source = "Power Automate Excel (synced " + new Date().toLocaleTimeString() + ")";
+    state.lastSync = Date.now();
+    save();
+    if (state.taskReadUrl) await syncTasks({ silent: true, noRender: true });
+    render();
+    if (!opts.silent) flashNote("Synced — " + added + " responses updated from Excel.");
+  } catch (err) {
+    if (!opts.silent) alert("Sync failed: " + err.message + "\n\nMost common fixes:\n1) In the flow's trigger, set Method = GET (Advanced parameters). A blank method expects POST and returns 400.\n2) Leave the trigger's Request Body JSON Schema empty.\n3) Make sure the full URL was copied, including everything after ? (the sig= part).\n4) Response action needs headers Content-Type: application/json and Access-Control-Allow-Origin: *\n\nQuick test: paste the URL in a new browser tab — you should see your rows as JSON.");
+  } finally {
+    const b = document.getElementById("btnSync");
+    if (b) { b.disabled = false; b.textContent = "Sync from Excel"; }
+  }
+}
+
+let flashTimer = null;
+function flashNote(msg) {
+  let el = document.getElementById("flashNote");
+  if (!el) {
+    el = document.createElement("div"); el.id = "flashNote";
+    el.style.cssText = "position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;z-index:80;box-shadow:0 8px 24px rgba(30,42,58,.25)";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg; el.style.display = "block";
+  clearTimeout(flashTimer); flashTimer = setTimeout(() => { el.style.display = "none"; }, 3500);
+}
+
+
+/* ---- data check: prove every sync, end to end ---- */
+function openAudit() {
+  const a = state.audit;
+  const root = document.getElementById("modalRoot");
+  if (!a) {
+    root.innerHTML = `<div class="modal-scrim" id="scrim"><div class="modal"><h3>Data check</h3>
+      <p>No sync audit yet${state.isDemo ? " — you're on demo data" : ""}. Run <b>Sync from Excel</b> first, then open this again.</p>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Close</button></div></div></div>`;
+  } else {
+    const dupN = a.duplicates.length;
+    const warn = [];
+    if (a.receivedRows === 256) warn.push(`Exactly <b>256 rows</b> received — that's Power Automate's default cap on "List rows present in a table". Turn on <b>Pagination</b> (action Settings → threshold 5000) or newer submissions are being silently cut off.`);
+    if (a.skippedNoScores) warn.push(`<b>${a.skippedNoScores} row(s)</b> had an email but no readable scores — check the mapping table below: if a satisfaction column shows under "not mapped", its header needs the pillar name + "sat" in it.`);
+    if (a.outOfRange.length) warn.push(`<b>${a.outOfRange.length} value(s)</b> outside expected ranges (satisfaction 1–10, rank 1–6): ${a.outOfRange.slice(0,4).map(esc).join("; ")}${a.outOfRange.length>4?"…":""}. Satisfaction values were clamped; invalid ranks ignored.`);
+    if (a.missingRanks) warn.push(`<b>${a.missingRanks} respondent(s)</b> have scores but no importance ranks — their pillars are weighted equally in the index.`);
+    if (a.notInRoster.length) warn.push(`<b>${a.notInRoster.length} email(s)</b> aren't in the roster (test rows?): ${a.notInRoster.slice(0,3).map(esc).join(", ")}${a.notInRoster.length>3?"…":""}. They're counted as respondents — delete their Excel rows if they're tests.`);
+    const mapRows = a.mapping.map(m => `<tr><td style="font-family:ui-monospace,monospace;font-size:12px">${esc(m.header)}</td><td>→ ${esc(m.field)}</td></tr>`).join("");
+    const unmapped = a.unmappedHeaders.length ? `<tr><td style="font-family:ui-monospace,monospace;font-size:12px;color:var(--ink-faint)">${a.unmappedHeaders.map(esc).join(", ")}</td><td style="color:var(--ink-faint)">not mapped (ignored)</td></tr>` : "";
+    root.innerHTML = `<div class="modal-scrim" id="scrim"><div class="modal" style="max-width:700px">
+      <h3>Data check — last sync ${new Date(a.at).toLocaleString()}</h3>
+      <table class="data" style="margin:10px 0">
+        <tr><td>Rows received from Excel</td><td><b>${a.receivedRows}</b></td></tr>
+        <tr><td>People stored (unique emails, latest row wins)</td><td><b>${a.stored}</b>${dupN ? ` <span class="chip warn">${dupN} duplicate row(s) superseded</span>` : ""}</td></tr>
+        <tr><td>Rows skipped — no email</td><td>${a.skippedNoEmail}</td></tr>
+        <tr><td>Rows skipped — no readable scores</td><td>${a.skippedNoScores}</td></tr>
+      </table>
+      ${warn.length ? `<div style="background:var(--warn-tint);border:1px solid #ecd9ba;border-radius:10px;padding:10px 14px;font-size:12.5px;line-height:1.6">${warn.map(w=>"• "+w).join("<br>")}</div>` : `<div style="background:var(--ok-tint);border:1px solid var(--ok-line);border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--ok-ink)"><b>No issues found.</b> Every row with an email and scores is on the dashboard; the arithmetic on top of them (index, matrix, heatmap) is computed from these exact values.</div>`}
+      <p style="margin:14px 0 6px"><b>How your Excel columns were read</b> — verify each satisfaction/rank landed on the right pillar:</p>
+      <div style="max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:10px"><table class="data">${mapRows}${unmapped}</table></div>
+      <p style="font-size:12px;color:var(--ink-faint);margin-top:10px">Final proof: pick one person from the Excel, search them in the dashboard, and compare the six scores digit for digit.</p>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Close</button></div>
+    </div></div>`;
+  }
+  document.getElementById("scrim").addEventListener("click", e => { if (e.target.id === "scrim") closeModal(); });
+}
+
+function openConnect() {
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-scrim" id="scrim"><div class="modal">
+    <h3>Connect the Power Automate Excel</h3>
+    <p>Your check-in already writes every submission into an Excel table through Power Automate. Add one small companion flow that <b>returns</b> those rows, and this dashboard stays current on its own — it re-syncs every time it opens.</p>
+    <p style="background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:12px 14px;line-height:1.7">
+      <b>One-time flow setup (about 3 minutes):</b><br>
+      1. New flow → <b>When an HTTP request is received</b> → Method: GET, "Anyone" can trigger.<br>
+      2. Add <b>List rows present in a table</b> → point it at the same Excel file &amp; table your check-in flow appends to.<br>
+      3. Add <b>Response</b> → Status 200 → Body: the <i>value</i> output from step 2.<br>
+      4. Save, copy the HTTP GET URL, and paste it below.
+    </p>
+    <p style="margin-bottom:6px"><b>Flow URL</b></p>
+    <input type="url" id="readUrlInput" placeholder="https://prod-….logic.azure.com/workflows/…/triggers/manual/paths/invoke?…"
+      style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;font-family:ui-monospace,monospace;color:var(--ink)"
+      value="${esc(state.readUrl || "")}">
+    <p style="margin:14px 0 6px"><b>Shared tasks (optional but recommended)</b> — lets mentors/managers open this same dashboard, see their tasks, comment and mark complete. Two more small flows against a "Tasks" and a "TaskUpdates" table:</p>
+    <p style="background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:12px 14px;line-height:1.7;font-size:12.5px">
+      <b>Task write flow:</b> HTTP <b>POST</b> trigger → Condition on <i>type</i>: when "task", <b>Add row</b> to table <i>Tasks</i> (columns: id, email, name, pillar, assignee, assigneeEmail, note, due, status, createdAt, score, comment) and optionally <b>Send an email</b> to <i>assigneeEmail</i>; when "update", <b>Add row</b> to table <i>TaskUpdates</i> (columns: taskId, by, text, status, at) → Response 200.<br>
+      <b>Task read flow:</b> HTTP <b>GET</b> trigger → List rows from both tables → Response body: <code>{ "tasks": [...], "updates": [...] }</code>.<br>
+      <b>Response headers (every flow):</b> <code>Content-Type: application/json</code> and <code>Access-Control-Allow-Origin: *</code> — the second one is required or the browser will block the reply.
+    </p>
+    <p style="margin-bottom:6px"><b>Task write URL (POST)</b></p>
+    <input type="url" id="taskWriteInput" placeholder="https://prod-….logic.azure.com/…/invoke?…" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;font-family:ui-monospace,monospace;color:var(--ink)" value="${esc(state.taskWriteUrl || "")}">
+    <p style="margin:10px 0 6px"><b>Task read URL (GET)</b></p>
+    <input type="url" id="taskReadInput" placeholder="https://prod-….logic.azure.com/…/invoke?…" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;font-family:ui-monospace,monospace;color:var(--ink)" value="${esc(state.taskReadUrl || "")}">
+    <p style="font-size:12px;color:var(--ink-faint)">Column names in the Excel table are detected automatically (e.g. <i>career_rank</i>, "Rewards Sat", <i>career_comment</i>) and rows are matched to the roster by email. The URL is saved only in this browser.</p>
+    <div class="modal-actions">
+      <button class="btn" id="btnCancel">Cancel</button>
+      <button class="btn" id="btnSaveUrl">Save link</button>
+      <button class="btn primary" id="btnSaveSync">Save &amp; sync now</button>
+    </div>
+    <p style="font-size:12px;color:var(--ink-faint);margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      Other options: <a href="#" onclick="closeModal();openImport();return false" style="color:var(--accent)">import a file once</a> ·
+      <a href="#" onclick="closeModal();generateDemo();return false" style="color:var(--accent)">load demo data</a> ·
+      <a href="#" onclick="clearData();return false" style="color:var(--flag)">clear loaded responses</a>
+    </p>
+  </div></div>`;
+  const close = () => { root.innerHTML = ""; };
+  document.getElementById("btnCancel").onclick = close;
+  document.getElementById("scrim").addEventListener("click", e => { if (e.target.id === "scrim") close(); });
+  const grab = () => {
+    state.readUrl = document.getElementById("readUrlInput").value.trim();
+    state.taskWriteUrl = document.getElementById("taskWriteInput").value.trim();
+    state.taskReadUrl = document.getElementById("taskReadInput").value.trim();
+    save(); };
+  document.getElementById("btnSaveUrl").onclick = () => { grab(); close(); flashNote("Sync link saved."); };
+  document.getElementById("btnSaveSync").onclick = () => { grab(); close(); syncFromExcel({}); };
+}
+
+
+
+/* ============================================================
+   Shared tasks: write/read via Power Automate + "My tasks"
+   ------------------------------------------------------------
+   Event model (append-only, Excel-friendly):
+     Task rows:    id,email,name,pillar,assignee,assigneeEmail,note,due,status,createdAt,score,comment
+     Update rows:  taskId,by,text,status,at
+   Write flow (POST): body is one of
+     { type:"task", ...taskRow }  |  { type:"update", ...updateRow }
+   Read flow (GET) returns { tasks:[rows], updates:[rows] } (or just an array of task rows).
+   ============================================================ */
+async function postTaskEvent(evt) {
+  const url = (state.taskWriteUrl || "").trim();
+  if (!url) return false;
+  try {
+    // No Content-Type header on purpose: a JSON header triggers a CORS preflight
+    // that Power Automate's HTTP trigger won't answer. Sent as text/plain,
+    // the flow still parses it with a Parse JSON action on triggerBody().
+    const res = await fetch(url, { method: "POST", body: JSON.stringify(evt) });
+    if (!res.ok) throw new Error("status " + res.status);
+    return true;
+  } catch (err) {
+    flashNote("Saved on this device — couldn't reach the task flow (" + err.message + "). It will show for others after the flow is fixed and the task is re-sent.");
+    return false;
+  }
+}
+
+function applyUpdate(t, u) {
+  if (!t.updates) t.updates = [];
+  const at = +u.at || Date.parse(u.at) || Date.now();
+  if (u.status && ["open", "progress", "done"].includes(String(u.status))) {
+    t.status = u.status; if (u.status === "done") t.doneAt = at;
+  }
+  const text = String(u.text || "").trim();
+  if (text) {
+    const dup = t.updates.some(x => x.text === text && Math.abs(x.at - at) < 2000);
+    if (!dup) t.updates.push({ by: u.by || "", text, at });
+  }
+  t.updates.sort((a, b) => a.at - b.at);
+}
+
+function mergeRemoteTasks(payload) {
+  let tasks = payload, updates = [];
+  if (payload && !Array.isArray(payload)) {
+    tasks = payload.tasks || payload.value || [];
+    updates = payload.updates || [];
+    if (tasks && !Array.isArray(tasks) && Array.isArray(tasks.value)) tasks = tasks.value;
+    if (updates && !Array.isArray(updates) && Array.isArray(updates.value)) updates = updates.value;
+  }
+  if (!Array.isArray(tasks)) tasks = [];
+  const byId = Object.fromEntries(state.tasks.map(t => [t.id, t]));
+  for (const row of tasks) {
+    if (!row || !row.id) continue;
+    let t = byId[row.id];
+    if (!t) {
+      t = { updates: [] , status: "open" };
+      state.tasks.push(t); byId[row.id] = t;
+    }
+    for (const k of ["id","email","name","pillar","assignee","assigneeEmail","note","due","comment"]) if (row[k] != null && row[k] !== "") t[k] = String(row[k]);
+    if (row.score != null && row.score !== "") t.score = +row.score;
+    t.createdAt = +row.createdAt || Date.parse(row.createdAt) || t.createdAt || Date.now();
+    if (row.status && ["open","progress","done"].includes(String(row.status))) t.status = t.status === "done" ? t.status : String(row.status);
+  }
+  for (const u of (Array.isArray(updates) ? updates : [])) {
+    const t = byId[u.taskId]; if (t) applyUpdate(t, u);
+  }
+  save();
+}
+
+async function syncTasks(opts) {
+  opts = opts || {};
+  const url = (state.taskReadUrl || "").trim();
+  if (!url) return;
+  try {
+    const res = await fetch(url, { method: "GET" });
+    const bodyText = await res.text();
+    if (!res.ok) {
+      let detail = ""; try { const j = JSON.parse(bodyText); detail = j.error?.message || j.message || bodyText; } catch { detail = bodyText; }
+      throw new Error("status " + res.status + (detail ? " — " + String(detail).slice(0, 160) : ""));
+    }
+    if (!bodyText.trim()) throw new Error("empty reply — the task read flow is missing its Response action or the Body is blank.");
+    let payload; try { payload = JSON.parse(bodyText); } catch { throw new Error("task flow reply isn't valid JSON: \"" + bodyText.slice(0, 100) + "…\""); }
+    mergeRemoteTasks(payload);
+    if (!opts.noRender) render();
+  } catch (err) {
+    if (!opts.silent) flashNote("Task sync failed: " + err.message);
+  }
+}
+
+/* ---- identity ("login") + access levels ----
+   ADMIN_EMAILS get the complete dashboard. Everyone else gets only
+   their own workspace: tasks assigned to them + their mentees' responses. */
+const ADMIN_EMAILS = [
+  "jahanvi.batra@altudo.co",
+  "rajat.babbar@altudo.co",
+  "manisha.naik@altudo.co",
+  "admin@altudo.co",
+];
+function whoAmI() { return state.me && state.me.email ? state.me : null; }
+function isAdmin() { const me = whoAmI(); return !!me && ADMIN_EMAILS.includes(me.email); }
+function identify(emailRaw) {
+  const email = String(emailRaw || "").trim().toLowerCase();
+  if (!email.includes("@")) { flashNote("Enter your work email address."); return; }
+  const r = ROSTER_BY_EMAIL[email];
+  if (!r && !ADMIN_EMAILS.includes(email)) { flashNote("That email isn't in the roster. Check the spelling, or contact HR."); return; }
+  state.me = { email, name: r ? r.name : email.split("@")[0] };
+  save(); render();
+  flashNote(`Signed in as ${state.me.name}${isAdmin() ? " (HR admin)" : ""}.`);
+  syncTasks({ silent: true });
+}
+function signOut() { state.me = null; save(); render(); window.scrollTo(0, 0); }
+
+function myTasksSection(showEmpty) {
+  const me = whoAmI();
+  if (!me) return "";
+  const mine = state.tasks.filter(t => (t.assigneeEmail || "").toLowerCase() === me.email)
+    .sort((a, b) => (a.status === "done") - (b.status === "done") || (a.due || "").localeCompare(b.due || ""));
+  if (!mine.length && !showEmpty) return "";
+  const openN = mine.filter(t => t.status !== "done").length;
+  const cards = mine.length ? mine.map(t => {
+    const overdue = t.status !== "done" && t.due && t.due < new Date().toISOString().slice(0, 10);
+    const updatesHtml = (t.updates || []).map(u =>
+      `<div style="font-size:12px;color:var(--ink-soft);padding:5px 0;border-top:1px dashed var(--line)"><b style="color:var(--ink)">${esc(u.by || "")}</b> · ${new Date(u.at).toLocaleDateString()}: ${esc(u.text)}</div>`).join("");
+    return `<div class="comment" style="${t.status === "done" ? "opacity:.6" : ""}">
+      <div class="c-top">
+        <b>${esc(t.name)}</b> <span class="chip">${PLABEL[t.pillar]}${t.score != null ? " · " + t.score + "/10" : ""}</span>
+        <span class="chip ${t.status === "done" ? "ok" : overdue ? "flag" : "warn"}">${t.status === "done" ? "Done" : overdue ? "Overdue" : t.status === "progress" ? "In progress" : "Open"}</span>
+        <span style="font-size:11.5px">due ${t.due ? new Date(t.due + "T00:00:00").toLocaleDateString() : "—"}</span>
+      </div>
+      <div class="c-body">${esc(t.note)}</div>
+      ${t.comment ? `<div class="c-body" style="font-size:12px;background:var(--cream);border-radius:8px;padding:7px 9px;margin-top:6px">Their check-in comment: “${esc(t.comment)}”</div>` : ""}
+      ${updatesHtml}
+      ${t.status !== "done" ? `
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <input id="cm_${t.id}" placeholder="Add an update — what was discussed / agreed…" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12.5px">
+        <button class="btn small" onclick="addTaskComment('${t.id}')">Add update</button>
+        ${t.status === "open" ? `<button class="btn small" onclick="myTaskStatus('${t.id}','progress')">Start</button>` : ""}
+        <button class="btn small primary" onclick="completeTask('${t.id}')">Mark complete</button>
+      </div>` : ""}
+    </div>`;
+  }).join("") : `<div class="card" style="text-align:center;padding:22px;font-size:13.5px">Nothing assigned to you right now. 🎉</div>`;
+  return `<section class="section" style="margin-top:26px">
+    <div class="section-eyebrow">My tasks</div>
+    <h2 class="section-title" style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+      <span>Assigned to ${esc(me.name)} ${openN ? `<span class="chip warn" style="vertical-align:middle">${openN} open</span>` : `<span class="chip ok" style="vertical-align:middle">all clear</span>`}</span>
+
+    </h2>
+    <p class="section-sub">Add a short update after each conversation, then mark complete. Your updates are visible to HR so the loop gets closed with the employee too.</p>
+    ${cards}
+  </section>`;
+}
+
+
+
+
+/* ---- global rating filter: one selection re-slices everything ---- */
+function roleOfPerson(email, sub) {
+  const r = ROSTER_BY_EMAIL[email];
+  return (r && r.role) || (sub && sub.role) || "";
+}
+function rosterPool() {
+  let list = ROSTER;
+  if (ui.hipoOnly) list = list.filter(r => r.hipo);
+  if (ui.ratingSel.length) list = list.filter(r => ui.ratingSel.includes(ratingOf(r.email)));
+  if (ui.roleSel.length) list = list.filter(r => ui.roleSel.includes(r.role));
+  return list;
+}
+function respondentPool() {
+  let subs = Object.values(state.responses);
+  if (ui.hipoOnly) subs = subs.filter(s => isHipo(s.email));
+  if (ui.ratingSel.length) subs = subs.filter(s => ui.ratingSel.includes(ratingOf(s.email)));
+  if (ui.roleSel.length) subs = subs.filter(s => ui.roleSel.includes(roleOfPerson(s.email, s)));
+  return subs;
+}
+function ratingBarHTML() {
+  const parts = RATING_ORDER.map(rt => {
+    const n = ROSTER.filter(r => ratingOf(r.email) === rt).length;
+    if (!n) return "";
+    return `<span class="chip ${ui.ratingSel.includes(rt) ? "active" : ""}" data-rating="${rt}">${rt} · ${n}</span>`;
+  }).join("");
+  const hipoN = ROSTER.filter(r => r.hipo).length;
+  const roleCounts = {};
+  for (const r of ROSTER) if (r.role) roleCounts[r.role] = (roleCounts[r.role] || 0) + 1;
+  const seniority = role => {
+    const r = role.toLowerCase();
+    if (r === "senior vice president") return 1;
+    if (r === "vice president") return 2;
+    if (r === "associate vice president") return 3;
+    if (r === "senior director") return 4;
+    if (r === "director") return 5;
+    if (r === "associate director") return 6;
+    if (r === "senior manager") return 7;
+    if (r.startsWith("manager")) return 8;
+    if (r.startsWith("associate manager")) return 9;
+    if (r === "senior solution architect" || r === "senior architect") return 10;
+    if (r === "architect") return 11;
+    if (r === "associate architect") return 12;
+    if (r.includes("product") || r.includes("program")) return 13;
+    if (r.startsWith("lead")) return 14;
+    if (r === "associate lead") return 15;
+    if (r.startsWith("senior")) return 16;         // senior associate / senior SDR / senior AE / senior consultant
+    if (r === "account executive" || r === "solution consultant") return 17;
+    if (r === "associate") return 18;
+    if (r.includes("sales development representative")) return 19;
+    if (r.startsWith("junior")) return 20;
+    if (r === "trainee") return 21;
+    return 22;
+  };
+  const sortedRoles = Object.keys(roleCounts).sort((a, b) => seniority(a) - seniority(b) || a.localeCompare(b));
+  const rolePanel = ui.rolePanelOpen ? `
+    <div id="rolePanel" style="position:absolute;top:calc(100% + 6px);left:0;z-index:55;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(30,42,58,.16);width:300px;max-height:340px;display:flex;flex-direction:column">
+      <div style="flex:1;overflow:auto;padding:8px 6px">
+        ${sortedRoles.map(role => `
+          <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--ink)" onmouseover="this.style.background='var(--accent-tint)'" onmouseout="this.style.background=''">
+            <input type="checkbox" data-rolebox="${esc(role)}" ${ui.roleSel.includes(role) ? "checked" : ""} style="accent-color:var(--accent)">
+            <span style="flex:1">${esc(role)}</span><span style="color:var(--ink-faint);font-size:11px">${roleCounts[role]}</span>
+          </label>`).join("")}
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-top:1px solid var(--line)">
+        <button class="btn small ghost" id="roleNone">Clear</button>
+        <button class="btn small primary" id="roleDone">Done</button>
+      </div>
+    </div>` : "";
+  const roleToggle = `<span style="position:relative;display:inline-block">
+    <span class="chip ${ui.roleSel.length ? "active" : ""}" id="roleToggle">Designation${ui.roleSel.length ? " · " + ui.roleSel.length : ""} ▾</span>
+    ${rolePanel}
+  </span>`;
+  const roleChips = ui.roleSel.map(role =>
+    `<span class="chip active" data-role="${esc(role)}" title="Remove">${esc(role)} ✕</span>`).join("");
+  const active = ui.ratingSel.length || ui.hipoOnly || ui.roleSel.length;
+  const label = [ui.hipoOnly ? "HiPo" : "", ui.ratingSel.length ? "rating " + ui.ratingSel.join(", ") : "", ui.roleSel.length ? ui.roleSel.join(", ") : ""].filter(Boolean).join(" + ");
+  return `<div class="theme-chips" id="ratingChips" style="align-items:center;margin:2px 0 20px">
+    <span style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-right:2px">View</span>
+    <span class="chip ${ui.hipoOnly ? "active" : ""}" id="hipoChip" style="${ui.hipoOnly ? "" : "border-color:#e2c98a;background:#faf3df;color:#8a6020"}">★ HiPo · ${hipoN}</span>
+    <span style="width:6px"></span>
+    ${parts}
+    <span style="width:6px"></span>
+    ${roleToggle}
+    ${roleChips}
+    ${active ? `<a href="#" id="ratingClear" style="font-size:11.5px;color:var(--accent);font-weight:700">show everyone</a>` : ""}
+  </div>
+  ${active ? `<div style="background:var(--accent-tint);border:1px solid var(--accent-line);border-radius:12px;padding:9px 14px;font-size:13px;font-weight:700;color:var(--accent);margin:-8px 0 20px">Every number below is filtered to ${label} — ${respondentPool().length} respondents of ${rosterPool().length} people.</div>` : ""}`;
+}
+function wireRatingBar() {
+  document.querySelectorAll("#ratingChips .chip[data-rating]").forEach(ch => ch.addEventListener("click", () => {
+    const rt = ch.dataset.rating;
+    ui.ratingSel = ui.ratingSel.includes(rt) ? ui.ratingSel.filter(x => x !== rt) : ui.ratingSel.concat(rt);
+    ui.peopleLimit = 15; ui.commentLimit = 12;
+    render();
+  }));
+  const hc = document.getElementById("hipoChip");
+  if (hc) hc.addEventListener("click", () => { ui.hipoOnly = !ui.hipoOnly; ui.peopleLimit = 15; ui.commentLimit = 12; render(); });
+  const rt = document.getElementById("roleToggle");
+  if (rt) rt.addEventListener("click", e => { e.stopPropagation(); ui.rolePanelOpen = !ui.rolePanelOpen; render(); });
+  const panel = document.getElementById("rolePanel");
+  if (panel) {
+    panel.addEventListener("click", e => e.stopPropagation());
+    const scrollKeep = ui._roleScroll || 0;
+    panel.firstElementChild && (panel.firstElementChild.scrollTop = scrollKeep);
+    panel.querySelectorAll("input[data-rolebox]").forEach(cb => cb.addEventListener("change", () => {
+      ui._roleScroll = panel.firstElementChild ? panel.firstElementChild.scrollTop : 0;
+      const role = cb.dataset.rolebox;
+      ui.roleSel = cb.checked ? ui.roleSel.concat(role) : ui.roleSel.filter(x => x !== role);
+      ui.peopleLimit = 15; ui.commentLimit = 12;
+      render();   // panel stays open (ui.rolePanelOpen still true)
+    }));
+    const done = document.getElementById("roleDone");
+    if (done) done.addEventListener("click", () => { ui.rolePanelOpen = false; render(); });
+    const none = document.getElementById("roleNone");
+    if (none) none.addEventListener("click", () => { ui.roleSel = []; render(); });
+  }
+  document.querySelectorAll("#ratingChips .chip[data-role]").forEach(ch => ch.addEventListener("click", () => {
+    ui.roleSel = ui.roleSel.filter(x => x !== ch.dataset.role); render();
+  }));
+  const rc = document.getElementById("ratingClear");
+  if (rc) rc.addEventListener("click", e => { e.preventDefault(); ui.ratingSel = []; ui.hipoOnly = false; ui.roleSel = []; ui.rolePanelOpen = false; render(); });
+}
+/* close the designation panel when clicking anywhere outside it */
+if (!window.__rolePanelCloser) {
+  window.__rolePanelCloser = true;
+  document.addEventListener("click", e => {
+    if (!ui.rolePanelOpen) return;
+    // If the clicked element is no longer in the document, this same click
+    // already caused a re-render (e.g. toggling a checkbox) — never treat
+    // a detached node as an "outside" click.
+    if (!document.body.contains(e.target)) return;
+    const panel = document.getElementById("rolePanel");
+    const toggle = document.getElementById("roleToggle");
+    if (panel && !panel.contains(e.target) && e.target !== toggle && !(toggle && toggle.contains(e.target))) {
+      ui.rolePanelOpen = false; render();
+    }
+  });
+}
+
+/* ---- performance rating × EVP ---- */
+function ratingStats() {
+  const groups = {};
+  for (const sub of respondentPool()) {
+    const rt = ratingOf(sub.email);
+    if (!groups[rt]) groups[rt] = { n: 0, indices: [], pillars: Object.fromEntries(PKEYS.map(k => [k, []])) };
+    const g = groups[rt]; g.n++;
+    const idx = personIndex(sub); if (idx != null) g.indices.push(idx);
+    for (const k of PKEYS) if (sub.sat[k] != null) g.pillars[k].push(sub.sat[k]);
+  }
+  return groups;
+}
+function ratingHeatHTML() {
+  const groups = ratingStats();
+  const order = RATING_ORDER.filter(rt => groups[rt] && groups[rt].n >= 3);
+  if (!order.length) return "";
+  let h = `<table class="heat"><tr><th style="text-align:left">Performance rating</th>${PILLARS.map(p => `<th>${p.label}</th>`).join("")}<th>Weighted index</th></tr>`;
+  for (const rt of order) {
+    const g = groups[rt];
+    h += `<tr><td class="rowhead">${esc(rt)}<span class="hm-n">n = ${g.n}</span></td>`;
+    for (const p of PILLARS) {
+      const v = g.pillars[p.key].length ? mean(g.pillars[p.key]) : null;
+      h += `<td style="background:${heatBg(v)};font-weight:700;color:#1e2a3a">${v == null ? "—" : fmt(v)}</td>`;
+    }
+    const idx = g.indices.length ? mean(g.indices) : null;
+    h += `<td style="background:${heatBg(idx)};font-weight:800;color:#1e2a3a">${idx == null ? "—" : fmt(idx)}</td></tr>`;
+  }
+  h += `</table>`;
+  return `<section class="section">
+    <div class="section-eyebrow">Performance × experience</div>
+    <h2 class="section-title">Satisfaction by performance rating</h2>
+    <p class="section-sub">The retention question in one table: are your 4s and 5s happier than your 3s? If the top-rated rows are amber on Rewards or Career, your best people are the ones being under-served — that is regrettable-attrition risk in the making.</p>
+    <div class="card heat-wrap">${h}</div>
+  </section>`;
+}
+function topPerformersAtRisk() {
+  return respondentPool().filter(sub => {
+    const rt = ratingOf(sub.email);
+    if (rt !== "4" && rt !== "5") return false;
+    const idx = personIndex(sub);
+    return idx != null && (idx < 6.5 || PKEYS.filter(k => sub.sat[k] != null && sub.sat[k] <= 6).length >= 2);
+  });
+}
+
+/* ---- mentor view: all my mentees and their check-ins ---- */
+function myMenteesSection() {
+  const me = whoAmI();
+  if (!me) return "";
+  const mentees = ROSTER.filter(r => (r.mentorEmail || "").toLowerCase() === me.email);
+  if (!mentees.length) return "";
+  const submitted = mentees.filter(r => state.responses[r.email]);
+  const idxs = submitted.map(r => personIndex(state.responses[r.email])).filter(v => v != null);
+  const avgIdx = idxs.length ? mean(idxs) : null;
+  const rows = mentees.map(r => {
+    const s = personStatus(r.email);
+    if (!s.submitted) {
+      return `<tr><td><b>${esc(r.name)}</b><br><span style="font-size:11.5px;color:var(--ink-faint)">${esc(r.role)}</span></td>
+        <td><span class="chip">Not submitted</span></td>
+        <td style="white-space:nowrap;text-align:right"><a class="btn small" style="text-decoration:none" href="${nudgeMailto(r)}">Email nudge</a></td></tr>`;
+    }
+    const sub = s.sub;
+    const cells = PILLARS.map(p => sub.sat[p.key] != null
+      ? `<span class="chip ${sub.sat[p.key] <= 4 ? "flag" : sub.sat[p.key] <= 6 ? "warn" : "ok"}" title="${p.label}">${p.label.slice(0, 3)} ${sub.sat[p.key]}</span>` : "").join(" ");
+    return `<tr><td><b>${esc(r.name)}</b><br><span style="font-size:11.5px;color:var(--ink-faint)">${esc(r.role)} · submitted ${new Date(sub.submittedAt).toLocaleDateString()}</span></td>
+      <td><span class="chip ${s.idx < 5.5 ? "flag" : s.idx < 7 ? "warn" : "ok"}">Index ${fmt(s.idx)}</span><br>
+        <span style="display:inline-flex;gap:4px;flex-wrap:wrap;margin-top:4px">${cells}</span></td>
+      <td style="white-space:nowrap;text-align:right"><button class="btn small" onclick="openPerson('${r.email}')">Full response</button></td></tr>`;
+  }).join("");
+  return `<section class="section" style="margin-top:26px">
+    <div class="section-eyebrow">My mentees</div>
+    <h2 class="section-title">${submitted.length} of ${mentees.length} mentees have checked in${avgIdx != null ? ` · cohort index ${fmt(avgIdx)}` : ""}</h2>
+    <p class="section-sub">Every score and comment your mentees shared, at a glance — open the full response before your next 1:1, and nudge anyone still pending.</p>
+    <div class="card" style="padding:8px 14px"><table class="data">${rows}</table></div>
+  </section>`;
+}
+
+function addTaskComment(id, textOverride) {
+  const t = state.tasks.find(x => x.id === id); if (!t) return;
+  const input = document.getElementById("cm_" + id);
+  const text = (textOverride != null ? textOverride : (input ? input.value : "")).trim();
+  if (!text) { flashNote("Type a short update first."); return; }
+  const me = whoAmI() || { name: "HR", email: "" };
+  const u = { taskId: id, by: me.name, text, at: Date.now() };
+  applyUpdate(t, u); save(); render();
+  postTaskEvent({ type: "update", ...u });
+}
+function myTaskStatus(id, status) {
+  const t = state.tasks.find(x => x.id === id); if (!t) return;
+  const me = whoAmI() || { name: "HR", email: "" };
+  const u = { taskId: id, by: me.name, status, text: "", at: Date.now() };
+  applyUpdate(t, u); save(); render();
+  postTaskEvent({ type: "update", ...u });
+}
+function completeTask(id) {
+  const t = state.tasks.find(x => x.id === id); if (!t) return;
+  const input = document.getElementById("cm_" + id);
+  const note = input ? input.value.trim() : "";
+  const me = whoAmI() || { name: "HR", email: "" };
+  const u = { taskId: id, by: me.name, status: "done", text: note || "Completed.", at: Date.now() };
+  applyUpdate(t, u); save(); render();
+  postTaskEvent({ type: "update", ...u });
+  flashNote("Nice — marked complete. HR will close the loop with " + (t.name.split(" ")[0]) + ".");
+}
+function wireMyTasks() {
+  const btn = document.getElementById("meGo");
+  const inp = document.getElementById("meEmail");
+  if (btn && inp) {
+    btn.addEventListener("click", () => identify(inp.value));
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") identify(inp.value); });
+  }
+}
+
+/* ============================================================
+   People directory, person drill-down, and follow-up tasks
+   ============================================================ */
+function personStatus(email) {
+  const sub = state.responses[email];
+  if (!sub) return { submitted: false };
+  return { submitted: true, sub, idx: personIndex(sub), lows: PKEYS.filter(k => sub.sat[k] != null && sub.sat[k] <= 6) };
+}
+
+function directoryHTML() {
+  const q = (ui.peopleSearch || "").toLowerCase().trim();
+  let list = rosterPool();
+  if (q) list = ROSTER.filter(r =>
+    r.name.toLowerCase().includes(q) || r.email.includes(q) ||
+    (r.role || "").toLowerCase().includes(q) || (r.mentor || "").toLowerCase().includes(q));
+  if (ui.peopleFilter === "pending") list = list.filter(r => !state.responses[r.email]);
+  if (ui.peopleFilter === "low") list = list.filter(r => { const s = personStatus(r.email); return s.submitted && s.lows.length >= 2; });
+  const total = list.length;
+  const shown = list.slice(0, ui.peopleLimit || 15);
+  const rows = shown.map(r => {
+    const s = personStatus(r.email);
+    const status = !s.submitted
+      ? `<span class="chip">Not submitted</span>`
+      : `<span class="chip ${s.idx < 5.5 ? "flag" : s.idx < 7 ? "warn" : "ok"}">Index ${fmt(s.idx)}</span>` +
+        (s.lows.length ? ` <span class="chip ${s.lows.length >= 3 ? "flag" : "warn"}">${s.lows.length} pillar${s.lows.length > 1 ? "s" : ""} ≤6</span>` : "");
+    const openTasks = state.tasks.filter(t => t.email === r.email && t.status !== "done").length;
+    const actions = s.submitted
+      ? `<button class="btn small" onclick="openPerson('${r.email}')">View</button>
+         <button class="btn small" onclick="openTaskModal('${r.email}')">Assign task</button>`
+      : `<a class="btn small" style="text-decoration:none" href="${nudgeMailto(r)}">Email nudge</a>`;
+    const rt = ratingOf(r.email);
+    return `<tr>
+      <td><b>${esc(r.name)}</b>${r.hipo ? ' <span class="chip" style="border-color:#e2c98a;background:#faf3df;color:#8a6020" title="High potential">★ HiPo</span>' : ""} <span class="chip ${ratingChipClass(rt)}" title="Performance rating">${esc(rt === "Unrated" ? "—" : rt)}</span><br><span style="font-size:11.5px;color:var(--ink-faint)">${esc(r.role)} · mentor ${esc(r.mentor || "—")}</span></td>
+      <td>${status}${openTasks ? ` <span class="chip">${openTasks} open task${openTasks > 1 ? "s" : ""}</span>` : ""}</td>
+      <td style="white-space:nowrap;text-align:right">${actions}</td></tr>`;
+  }).join("");
+  return `
+    <div class="filters">
+      <input type="search" id="pSearch" placeholder="Search ${ROSTER.length} employees by name, role or mentor…" style="flex:1;min-width:220px" value="${esc(ui.peopleSearch || "")}">
+      <select id="pFilter">
+        <option value="all" ${ui.peopleFilter === "all" ? "selected" : ""}>Everyone</option>
+        <option value="low" ${ui.peopleFilter === "low" ? "selected" : ""}>2+ pillars ≤6</option>
+        <option value="pending" ${ui.peopleFilter === "pending" ? "selected" : ""}>Not yet submitted</option>
+      </select>
+    </div>
+
+    <div class="card" style="padding:8px 14px"><table class="data">${rows || `<tr><td style="padding:16px">No one matches that search.</td></tr>`}</table>
+    ${total > shown.length ? `<div class="load-more" style="padding:8px 0 10px"><button class="btn small" id="pMore">Show more (${total - shown.length} left)</button></div>` : ""}</div>`;
+}
+function nudgeMailto(r) {
+  const subject = encodeURIComponent("A quick nudge — your EVP Check-In is waiting");
+  const body = encodeURIComponent(
+`Hi ${r.name.split(" ")[0]},
+
+Your EVP Check-In hasn't come through yet — it takes about 5 minutes and directly shapes what we prioritise next (career paths, rewards, learning and more).
+
+Could you complete it this week? Your mentor ${r.mentor || ""} can help if anything is unclear.
+
+Thank you!`);
+  return `mailto:${r.email}?subject=${subject}&body=${body}`;
+}
+
+/* ---- person drill-down ---- */
+function canViewPerson(email) {
+  if (isAdmin()) return true;
+  const me = whoAmI(); if (!me) return false;
+  const r = ROSTER_BY_EMAIL[email];
+  if (r && (r.mentorEmail || "").toLowerCase() === me.email) return true;      // my mentee
+  return state.tasks.some(t => t.email === email && (t.assigneeEmail || "").toLowerCase() === me.email); // task about them assigned to me
+}
+function openPerson(email) {
+  if (!canViewPerson(email)) { flashNote("You can only open responses of your own mentees."); return; }
+  const r = ROSTER_BY_EMAIL[email] || { email, name: email, role: "", mentor: "" };
+  const s = personStatus(email);
+  const st = buildStats();
+  const root = document.getElementById("modalRoot");
+  let body = "";
+  if (!s.submitted) {
+    body = `<p>No check-in submitted yet.</p><a class="btn" style="text-decoration:none" href="${nudgeMailto(r)}">Draft reminder email</a>`;
+  } else {
+    const sub = s.sub;
+    const rowsHtml = PILLARS.map(p => {
+      const v = sub.sat[p.key], avg = st.pillars[p.key].meanSat, rk = sub.ranks[p.key];
+      if (v == null) return "";
+      const delta = v - avg;
+      return `<tr>
+        <td><b>${p.label}</b><br><span style="font-size:11px;color:var(--ink-faint)">priority #${rk ?? "—"}</span></td>
+        <td style="width:44%"><div class="bar-track" style="height:9px"><div class="bar-fill" style="width:${v * 10}%;background:${satColor(v)}"></div></div></td>
+        <td style="white-space:nowrap"><b style="color:${satColor(v)}">${v}/10</b>
+          <span style="font-size:11px;color:var(--ink-faint)"> vs ${fmt(avg)} avg (${delta >= 0 ? "+" : ""}${fmt(delta)})</span></td>
+      </tr>` + ((sub.comments[p.key] || "").trim() ? `<tr><td colspan="3" style="border-bottom:1px solid var(--line);padding-top:0"><div class="c-body" style="font-size:12.5px;background:var(--cream);border-radius:8px;padding:8px 10px">“${esc(sub.comments[p.key])}”</div></td></tr>` : "");
+    }).join("");
+    body = `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <span class="chip ${s.idx < 5.5 ? "flag" : s.idx < 7 ? "warn" : "ok"}">Weighted index ${fmt(s.idx)}</span>
+        ${isHipo(r.email) ? '<span class="chip" style="border-color:#e2c98a;background:#faf3df;color:#8a6020">★ HiPo</span>' : ""}
+        <span class="chip ${ratingChipClass(ratingOf(r.email))}">Rating ${esc(ratingOf(r.email))}</span>
+        <span class="chip">${esc(bandOf(sub.role || r.role))}</span>
+        <span class="chip">Submitted ${new Date(sub.submittedAt).toLocaleDateString()}</span>
+      </div>
+      <table class="data">${rowsHtml}</table>
+      <div class="modal-actions" style="justify-content:flex-start">
+        <button class="btn primary" onclick="openTaskModal('${email}')">Assign a follow-up task</button>
+        <a class="btn" style="text-decoration:none" href="${summaryMailto(sub, r)}">Email summary to mentor</a>
+      </div>`;
+  }
+  root.innerHTML = `<div class="modal-scrim" id="scrim"><div class="modal" style="max-width:680px">
+    <h3>${esc(r.name)}</h3>
+    <p style="margin-top:0;color:var(--ink-faint);font-size:12.5px">${esc(r.role)} · mentor ${esc(r.mentor || "—")} ${r.mentorEmail ? "· " + esc(r.mentorEmail) : ""}</p>
+    ${body}
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Close</button></div>
+  </div></div>`;
+  document.getElementById("scrim").addEventListener("click", e => { if (e.target.id === "scrim") closeModal(); });
+}
+function closeModal() { document.getElementById("modalRoot").innerHTML = ""; }
+
+function summaryMailto(sub, r) {
+  const lows = PKEYS.filter(k => sub.sat[k] != null && sub.sat[k] <= 6);
+  const lines = [
+`Hi ${(r.mentor || "").split(" ")[0] || "there"},`,
+``,
+`Sharing ${sub.name}'s EVP Check-In summary so you can plan your next development conversation.`,
+``,
+`Scores (satisfaction /10, priority rank in brackets):`];
+  for (const k of PKEYS) if (sub.sat[k] != null)
+    lines.push(`  - ${PLABEL[k]}: ${sub.sat[k]}/10 (priority #${sub.ranks[k] ?? "-"})${sub.sat[k] <= 6 ? "  << needs attention" : ""}`);
+  if (lows.length) {
+    lines.push(``, `Comments on the low areas:`);
+    for (const k of lows) if ((sub.comments[k] || "").trim()) lines.push(`  - ${PLABEL[k]}: "${sub.comments[k]}"`);
+  }
+  lines.push(``, `Suggested next step: a 1:1 within the next two weeks focused on ${lows.map(k => PLABEL[k]).join(", ") || "reinforcing what's working"}.`, ``, `Thanks!`);
+  return `mailto:${r.mentorEmail || ""}?subject=${encodeURIComponent(`EVP check-in summary: ${sub.name}`)}&body=${encodeURIComponent(lines.join("\n"))}`;
+}
+
+/* ---- follow-up tasks ---- */
+function openTaskModal(email, presetPillar) {
+  const r = ROSTER_BY_EMAIL[email] || { email, name: email, mentor: "", mentorEmail: "" };
+  const s = personStatus(email);
+  const lows = s.submitted ? s.lows : [];
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-scrim" id="scrim"><div class="modal">
+    <h3>Assign a follow-up task</h3>
+    <p style="margin-top:0">For <b>${esc(r.name)}</b>${lows.length ? ` — scored ≤6 on ${lows.map(k => PLABEL[k]).join(", ")}` : ""}</p>
+    <p style="margin-bottom:4px"><b>Pillar</b></p>
+    <select id="tPillar" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px">
+      ${PILLARS.map(p => `<option value="${p.key}" ${(presetPillar ? presetPillar === p.key : lows[0] === p.key) ? "selected" : ""}>${p.label}${lows.includes(p.key) ? ` — scored ${s.sub.sat[p.key]}/10` : ""}</option>`).join("")}
+    </select>
+    <p style="margin-bottom:4px"><b>Assign to</b> <span style="font-weight:400;color:var(--ink-faint)">(mentor is prefilled — change to a manager, HRBP or comp lead as needed)</span></p>
+    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px">
+      <input id="tWho" placeholder="Name" value="${esc(r.mentor || "")}" style="border:1px solid var(--line);border-radius:8px;padding:8px">
+      <input id="tWhoEmail" placeholder="email@altudo.co" value="${esc(r.mentorEmail || "")}" style="border:1px solid var(--line);border-radius:8px;padding:8px">
+    </div>
+    <p style="margin-bottom:4px;margin-top:12px"><b>What should happen</b></p>
+    <textarea id="tNote" style="min-height:90px;font-family:var(--body);font-size:13px" placeholder="e.g. Walk them through the promotion framework and agree 2–3 gaps to close this cycle. Confirm the next review date.">${esc(taskSuggestion(s, presetPillar || lows[0]))}</textarea>
+    <p style="margin-bottom:4px"><b>Due</b></p>
+    <input type="date" id="tDue" value="${new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)}" style="border:1px solid var(--line);border-radius:8px;padding:8px">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn" id="tSave">Save task</button>
+      <button class="btn primary" id="tSaveSend">Save &amp; draft email</button>
+    </div>
+  </div></div>`;
+  document.getElementById("scrim").addEventListener("click", e => { if (e.target.id === "scrim") closeModal(); });
+  const build = () => ({
+    id: "t" + Date.now() + Math.floor(Math.random() * 999),
+    email, name: r.name,
+    pillar: document.getElementById("tPillar").value,
+    assignee: document.getElementById("tWho").value.trim(),
+    assigneeEmail: document.getElementById("tWhoEmail").value.trim(),
+    note: document.getElementById("tNote").value.trim(),
+    due: document.getElementById("tDue").value,
+    status: "open", createdAt: Date.now(),
+    score: s.submitted ? s.sub.sat[document.getElementById("tPillar").value] : null,
+    comment: s.submitted ? (s.sub.comments[document.getElementById("tPillar").value] || "") : "",
+  });
+  const persist = t => { state.tasks.push(t); save(); postTaskEvent({ type: "task", ...t, updates: undefined }); };
+  document.getElementById("tSave").onclick = () => { persist(build()); closeModal(); render();
+    flashNote(state.taskWriteUrl ? "Task saved and sent to the shared tracker." : "Task saved on this device."); };
+  document.getElementById("tSaveSend").onclick = () => {
+    const t = build(); persist(t); closeModal(); render();
+    window.location.href = taskMailto(t);
+  };
+}
+function taskSuggestion(s, pillar) {
+  if (!s.submitted || !pillar) return "";
+  const score = s.sub.sat[pillar], c = (s.sub.comments[pillar] || "").trim();
+  const stems = {
+    career: "Walk them through the promotion framework for their track, agree 2–3 concrete gaps to close this cycle, and put a date on the next career conversation.",
+    learning: "Agree one certification or structured learning goal for this quarter and unblock the budget/approval for it.",
+    people: "Have a 1:1 to understand the team friction, then align ownership with the other party involved.",
+    culture: "Discuss where stated values and day-to-day experience diverge for them, and pick one visible fix.",
+    rewards: "Share their compensation band positioning, explain how the last revision was decided, and confirm the next review date.",
+    work: "Review their current staffing/scope, agree what changes (variety, estimation, load), and set a check-back date.",
+  };
+  let out = stems[pillar] || "";
+  if (c) out += `\n\nTheir comment (${score}/10): "${c}"`;
+  return out;
+}
+function taskMailto(t) {
+  const dueTxt = t.due ? new Date(t.due + "T00:00:00").toLocaleDateString() : "in the next two weeks";
+  const body =
+`Hi ${(t.assignee || "").split(" ")[0] || "there"},
+
+From ${t.name}'s EVP Check-In: ${PLABEL[t.pillar]} scored ${t.score != null ? t.score + "/10" : "low"}${t.comment ? `, with this comment:
+
+  "${t.comment}"` : "."}
+
+What we'd like you to own (due ${dueTxt}):
+${t.note}
+
+Please reply with what was agreed after you've spoken — I'll close the loop with ${t.name.split(" ")[0]} from our side too.
+
+Thank you!`;
+  return `mailto:${t.assigneeEmail}?subject=${encodeURIComponent(`Follow-up needed: ${t.name} — ${PLABEL[t.pillar]}`)}&body=${encodeURIComponent(body)}`;
+}
+
+function tasksHTML() {
+  const tasks = state.tasks.slice().sort((a, b) => (a.status === "done") - (b.status === "done") || (a.due || "").localeCompare(b.due || ""));
+  const open = tasks.filter(t => t.status !== "done").length;
+  const overdue = tasks.filter(t => t.status !== "done" && t.due && t.due < new Date().toISOString().slice(0, 10)).length;
+  if (!tasks.length) return `<div class="card" style="text-align:center;padding:26px"><p style="margin:0;font-size:13.5px">No follow-up tasks yet. Assign one from the attention list or any person's profile — low scores that nobody owns don't improve.</p></div>`;
+  const rows = tasks.map(t => `<tr style="${t.status === "done" ? "opacity:.55" : ""}">
+    <td><b>${esc(t.name)}</b><br><span style="font-size:11.5px;color:var(--ink-faint)">${PLABEL[t.pillar]}${t.score != null ? " · " + t.score + "/10" : ""}</span></td>
+    <td style="font-size:12.5px">${esc(t.note).slice(0, 110)}${t.note.length > 110 ? "…" : ""}
+      ${(t.updates && t.updates.length) ? `<div style="font-size:11.5px;color:var(--accent);margin-top:3px">↳ ${esc(t.updates[t.updates.length-1].by || "")}: ${esc(t.updates[t.updates.length-1].text).slice(0,90)}</div>` : ""}<br>
+      <span style="font-size:11.5px;color:var(--ink-faint)">→ ${esc(t.assignee || t.assigneeEmail || "unassigned")} · due ${t.due ? new Date(t.due + "T00:00:00").toLocaleDateString() : "—"}
+      ${t.status !== "done" && t.due && t.due < new Date().toISOString().slice(0, 10) ? '<span class="chip flag">overdue</span>' : ""}</span></td>
+    <td style="white-space:nowrap;text-align:right">
+      <select onchange="setTaskStatus('${t.id}', this.value)" style="border:1px solid var(--line);border-radius:7px;padding:4px 6px;font-size:12px">
+        <option value="open" ${t.status === "open" ? "selected" : ""}>Open</option>
+        <option value="progress" ${t.status === "progress" ? "selected" : ""}>In progress</option>
+        <option value="done" ${t.status === "done" ? "selected" : ""}>Done</option>
+      </select>
+      <a class="btn small" style="text-decoration:none" href="${taskMailto(t)}">Email</a>
+      <button class="btn small ghost" onclick="deleteTask('${t.id}')">✕</button></td></tr>`).join("");
+  return `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+      <span class="chip ${open ? "warn" : "ok"}">${open} open</span>
+      ${overdue ? `<span class="chip flag">${overdue} overdue</span>` : ""}
+      <span style="flex:1"></span>
+      <button class="btn small" onclick="exportTasks()">Export CSV</button>
+    </div>
+    <div class="card" style="padding:8px 14px;max-height:440px;overflow:auto"><table class="data">${rows}</table></div>`;
+}
+function setTaskStatus(id, status) {
+  const t = state.tasks.find(x => x.id === id); if (!t) return;
+  t.status = status; if (status === "done") t.doneAt = Date.now();
+  save(); render();
+  postTaskEvent({ type: "update", taskId: id, by: "HR", status, text: "", at: Date.now() });
+  flashNote(status === "done" ? "Task closed — remember to tell the employee what changed." : "Task updated.");
+}
+function deleteTask(id) { state.tasks = state.tasks.filter(t => t.id !== id); save(); render(); }
+function exportTasks() {
+  const q = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const rows = [["Employee","Email","Pillar","Score","Assignee","Assignee email","Task","Due","Status","Created"].map(q).join(",")]
+    .concat(state.tasks.map(t => [t.name, t.email, PLABEL[t.pillar], t.score, t.assignee, t.assigneeEmail, t.note, t.due, t.status, new Date(t.createdAt).toISOString().slice(0,10)].map(q).join(",")));
+  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "evp-follow-up-tasks.csv"; a.click();
+  URL.revokeObjectURL(a.href);
+}
+function wirePeople() {
+  const on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  on("pSearch", "input", e => { ui.peopleSearch = e.target.value; ui.peopleLimit = 15;
+    const wrap = document.getElementById("peopleWrap"); if (wrap) { wrap.innerHTML = directoryHTML(); wirePeople(); const s = document.getElementById("pSearch"); s.focus(); s.setSelectionRange(s.value.length, s.value.length); } });
+  on("pFilter", "change", e => { ui.peopleFilter = e.target.value; ui.peopleLimit = 15;
+    const wrap = document.getElementById("peopleWrap"); if (wrap) { wrap.innerHTML = directoryHTML(); wirePeople(); } });
+  on("pMore", "click", () => { ui.peopleLimit = (ui.peopleLimit || 15) + 20;
+    const wrap = document.getElementById("peopleWrap"); if (wrap) { wrap.innerHTML = directoryHTML(); wirePeople(); } });
+}
+
+/* ---------------- import modal ---------------- */
+function openImport() {
+  const root = document.getElementById("modalRoot");
+  root.innerHTML = `<div class="modal-scrim" id="scrim"><div class="modal">
+    <h3>Import check-in responses</h3>
+    <p>Bring in the Excel/CSV file that Power Automate maintains, a CSV export, or the raw JSON payloads. Columns are auto-detected — headers just need to contain the pillar name plus <b>rank</b>, <b>sat</b>/<b>score</b>, or <b>comment</b> (e.g. <i>career_sat</i>, <i>Rewards rank</i>). Rows are matched to the roster by email; re-importing updates existing rows.</p>
+    <div class="drop" id="drop">Drop a .xlsx / .csv / .json file here, or
+      <label style="color:var(--accent);font-weight:700;cursor:pointer"> browse<input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.xlsm,.json" style="display:none"></label></div>
+    <p style="margin-bottom:6px"><b>Or paste JSON</b> (array of submissions, Power Automate shape supported):</p>
+    <textarea id="jsonPaste" placeholder='[{"email":"a@altudo.co","career":{"rank":1,"sat":6,"comment":"..."}, ...}]'></textarea>
+    <div class="modal-actions">
+      <button class="btn" id="btnCancel">Cancel</button>
+      <button class="btn primary" id="btnPaste">Import pasted JSON</button>
+    </div>
+  </div></div>`;
+  const close = () => { root.innerHTML = ""; };
+  document.getElementById("btnCancel").onclick = close;
+  document.getElementById("scrim").addEventListener("click", e => { if (e.target.id === "scrim") close(); });
+  if (state.isDemo) { state.responses = {}; state.isDemo = false; }   // real data must never mix with demo
+  const finish = added => { state.source = `Imported responses (${Object.keys(state.responses).length} total)`; save(); close(); render(); alert(`Imported/updated ${added} responses.`); };
+  document.getElementById("fileInput").addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { finish(await handleFile(f)); } catch (err) { alert("Import failed: " + err.message); }
+  });
+  const drop = document.getElementById("drop");
+  drop.addEventListener("dragover", e => { e.preventDefault(); });
+  drop.addEventListener("drop", async e => {
+    e.preventDefault(); const f = e.dataTransfer.files[0]; if (!f) return;
+    try { finish(await handleFile(f)); } catch (err) { alert("Import failed: " + err.message); }
+  });
+  document.getElementById("btnPaste").onclick = () => {
+    try { finish(jsonToResponses(JSON.parse(document.getElementById("jsonPaste").value))); }
+    catch (err) { alert("Import failed: " + err.message); }
+  };
+}
+
+/* ---------------- global employee search ---------------- */
+function wireGlobalSearch() {
+  const input = document.getElementById("globalSearch");
+  const box = document.getElementById("globalSuggest");
+  if (!input || !box) return;
+  let cursor = -1, matches = [];
+  const close = () => { box.classList.add("hidden"); cursor = -1; };
+  const show = () => {
+    const q = input.value.toLowerCase().trim();
+    if (q.length < 2) { close(); return; }
+    matches = ROSTER.filter(r => r.name.toLowerCase().includes(q) || r.email.includes(q) ||
+      (r.role || "").toLowerCase().includes(q)).slice(0, 8);
+    if (!matches.length) { box.innerHTML = `<div class="sg"><span class="sg-sub">No match in the roster</span></div>`; box.classList.remove("hidden"); return; }
+    box.innerHTML = matches.map((r, i) => {
+      const s = personStatus(r.email);
+      const badge = s.submitted
+        ? `<span class="chip ${s.idx < 5.5 ? "flag" : s.idx < 7 ? "warn" : "ok"}">${fmt(s.idx)}</span>`
+        : `<span class="chip">pending</span>`;
+      return `<div class="sg ${i === cursor ? "active" : ""}" data-email="${r.email}">
+        <span><span class="sg-name">${esc(r.name)}</span><br><span class="sg-sub">${esc(r.role)} · ${esc(r.mentor || "—")}</span></span>${badge}</div>`;
+    }).join("");
+    box.classList.remove("hidden");
+    box.querySelectorAll(".sg[data-email]").forEach(el => el.addEventListener("mousedown", e => {
+      e.preventDefault(); openPerson(el.dataset.email); input.value = ""; close();
+    }));
+  };
+  input.addEventListener("input", () => { cursor = -1; show(); });
+  input.addEventListener("focus", show);
+  input.addEventListener("blur", () => setTimeout(close, 150));
+  input.addEventListener("keydown", e => {
+    if (e.key === "Escape") { input.value = ""; close(); return; }
+    if (!matches.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); cursor = Math.min(cursor + 1, matches.length - 1); show(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); cursor = Math.max(cursor - 1, 0); show(); }
+    else if (e.key === "Enter" && cursor >= 0) { e.preventDefault(); openPerson(matches[cursor].email); input.value = ""; close(); }
+    else if (e.key === "Enter" && matches.length === 1) { e.preventDefault(); openPerson(matches[0].email); input.value = ""; close(); }
+  });
+}
+
+function clearData() {
+  if (!confirm("Clear all loaded responses from this browser? (The saved sync link is kept.)")) return;
+  state = { responses: {}, source: "", readUrl: state.readUrl || "", tasks: state.tasks || [] }; save(); closeModal(); render();
+}
+
+/* Built-in sync link: the dashboard works out of the box for anyone the file
+   is shared with. A different URL saved via Data settings takes precedence. */
+const DEFAULT_READ_URL = "https://defaultb9d69197ce1f49079545b307af2335.e9.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/08/workflows/96882381a1a1432c934c8c4a46d68560/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=HKnfuiBPtHziTm2Iphfoys2ZBCs4eonTNdca24P6g6c";
+if (!state.readUrl) { state.readUrl = DEFAULT_READ_URL; save(); }
+
+/* ---------------- header events + boot ---------------- */
+document.getElementById("btnSync").addEventListener("click", () => syncFromExcel({}));
+document.getElementById("btnPrint").addEventListener("click", () => window.print());
+wireGlobalSearch();
+render();
+if (state.readUrl) syncFromExcel({ silent: true });   // stay current with the Excel on every open
+if (state.taskReadUrl) syncTasks({ silent: true });   // pull shared tasks + updates
+
+/* Live updates: the Excel keeps growing, so quietly re-sync every 60s while
+   the tab is visible, and immediately when the user returns to the tab. */
+let autoBusy = false;
+async function autoRefresh() {
+  if (autoBusy || document.hidden || !whoAmI()) return;
+  autoBusy = true;
+  try {
+    if (state.readUrl) await syncFromExcel({ silent: true });
+    if (state.taskReadUrl) await syncTasks({ silent: true, noRender: true });
+  } finally { autoBusy = false; }
+}
+setInterval(autoRefresh, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) autoRefresh(); });
+
+</script>
+</body>
+</html>
