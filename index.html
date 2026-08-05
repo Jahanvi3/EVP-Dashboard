@@ -2370,15 +2370,37 @@ function applyUpdate(t, u) {
   t.updates.sort((a, b) => a.at - b.at);
 }
 
+/* Excel column headers arrive however they were typed — "Id", "id", "AccessJson",
+   "accessjson". Power Automate passes them through verbatim, so match on a
+   lowercased copy of every key rather than assuming one spelling. */
+const ROW_KEYS = ["id", "type", "accessjson", "fnmapjson", "rosterjson", "at", "email", "name", "pillar",
+  "assignee", "assigneeemail", "note", "due", "status", "createdat", "score", "comment", "taskid", "by", "text"];
+const ROW_CANON = { accessjson: "accessJson", fnmapjson: "fnMapJson", rosterjson: "rosterJson",
+  assigneeemail: "assigneeEmail", createdat: "createdAt", taskid: "taskId" };
+function normaliseRow(row) {
+  if (!row || typeof row !== "object") return row;
+  const out = Object.assign({}, row);
+  for (const [k, v] of Object.entries(row)) {
+    const lc = String(k).toLowerCase().replace(/[\s_]+/g, "");
+    if (!ROW_KEYS.includes(lc)) continue;
+    const canon = ROW_CANON[lc] || lc;
+    if (out[canon] === undefined || out[canon] === "") out[canon] = v;
+  }
+  return out;
+}
+
 function mergeRemoteTasks(payload) {
   let tasks = payload, updates = [];
   if (payload && !Array.isArray(payload)) {
-    tasks = payload.tasks || payload.value || [];
+    tasks = payload.tasks || payload.value || payload.rows || payload.body || [];
     updates = payload.updates || [];
     if (tasks && !Array.isArray(tasks) && Array.isArray(tasks.value)) tasks = tasks.value;
     if (updates && !Array.isArray(updates) && Array.isArray(updates.value)) updates = updates.value;
   }
   if (!Array.isArray(tasks)) tasks = [];
+  tasks = tasks.map(normaliseRow);
+  updates = Array.isArray(updates) ? updates.map(normaliseRow) : [];
+  state.accessRowsRead = tasks.length;
   const byId = Object.fromEntries(state.tasks.map(t => [t.id, t]));
   for (const row of tasks) {
     if (!row || !row.id) continue;
@@ -2812,7 +2834,13 @@ function newDraft(existing) {
 function accessSyncLine() {
   const w = (state.taskWriteUrl || "").trim(), r = (state.taskReadUrl || "").trim();
   if (!w || !r) return `<div class="md-sync"><span>⚠ Grants are saved on this device only — no sharing flow is connected, so nobody else will see them. Add both URLs under <a href="#" onclick="closeModal();openConnect();return false">Data settings</a>.</span></div>`;
-  return `<div class="md-sync"><span>Sharing is connected.${state.accessSyncAt ? ` Last read from the flow ${new Date(state.accessSyncAt).toLocaleString()} · ${state.accessSyncCount || 0} grant${state.accessSyncCount === 1 ? "" : "s"} came back.` : " Nothing has been read back from the flow yet — if a colleague can't see their access, check the read flow returns rows."}</span>
+  const read = state.accessRowsRead;
+  const mismatch = read > 0 && !state.accessSyncAt;
+  return `<div class="md-sync"><span>Sharing is connected.${state.accessSyncAt
+      ? ` Last read from the flow ${new Date(state.accessSyncAt).toLocaleString()} · ${state.accessSyncCount || 0} grant${state.accessSyncCount === 1 ? "" : "s"} came back${read ? ` from ${read} row${read === 1 ? "" : "s"}` : ""}.`
+      : mismatch
+        ? ` ⚠ The flow returned ${read} row${read === 1 ? "" : "s"} but none were readable as grants — check the Excel column names are id, type, accessJson, fnMapJson, rosterJson, at.`
+        : " Nothing has been read back from the flow yet — if a colleague can't see their access, check the read flow returns rows."}</span>
     <button type="button" class="btn small" id="agSyncNow">Check now</button></div>`;
 }
 
