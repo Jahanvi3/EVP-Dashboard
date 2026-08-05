@@ -1578,7 +1578,7 @@ function render() {
       })()}
     </div>
 
-    ${myTasksSection(false)}
+    ${myGrant() && !isAdmin() ? "" : myTasksSection(false)}
     ${myMenteesSection()}
 
     ${gate("pillars", `<section class="section">
@@ -2596,19 +2596,32 @@ function hipoStarHTML(email) {
 function accessBannerHTML() {
   if (!VIEW) return "";
   const g = VIEW.grant, s = g.scope || {};
-  const scopeTxt = (!s.type || s.type === "all") ? "entire organisation"
-    : s.type === "team" ? ("your team — direct reports" + (s.skip ? " + skip level" : ""))
-    : [ s.functions && s.functions.length ? "Function: " + s.functions.join(", ") : "",
-        s.grades && s.grades.length ? "Grade: " + s.grades.join(", ") : "",
-        s.countries && s.countries.length ? "Country: " + s.countries.join(", ") : "",
-        s.bands && s.bands.length ? "Career stage: " + s.bands.join(", ") : "",
-        s.roles && s.roles.length ? "Designation: " + s.roles.join(", ") : "",
-        s.mentors && s.mentors.length ? "Mentor: " + s.mentors.join(", ") : "" ].filter(Boolean).join(" · ") || "entire organisation";
-  const bits = ["Scope — " + scopeTxt];
-  if (minGroup() > 1) bits.push("groups under " + minGroup() + " responses are hidden");
-  if (hideNames()) bits.push("names anonymised");
-  if (hideRatings()) bits.push("ratings & HiPo hidden");
-  return `<div style="background:var(--accent-tint);border:1px solid var(--accent-line);color:var(--ink);border-radius:12px;padding:10px 16px;font-size:12.5px;font-weight:600;margin:6px 0 14px">🔒 Scoped view, granted by HR${g.grantedBy ? " (" + esc(g.grantedBy) + ")" : ""}. ${esc(bits.join(" · "))}.</div>`;
+  /* Only mention a facet that actually narrows things, and never list more than
+     a few values — "Select all" used to print every function, grade, designation
+     and mentor in the company, which told the reader nothing. */
+  const facet = (label, chosen, total) => {
+    const list = chosen || [];
+    if (!list.length || (total && list.length >= total)) return "";
+    if (list.length <= 3) return label + ": " + list.join(", ");
+    return label + ": " + list.slice(0, 2).join(", ") + " +" + (list.length - 2) + " more";
+  };
+  const uniq = fn => new Set(ROSTER.map(fn).filter(Boolean)).size;
+  const scopeTxt = (!s.type || s.type === "all") ? "the whole organisation"
+    : s.type === "team" ? ("your own team" + (s.skip ? " and their teams" : ""))
+    : [ facet("Function", s.functions, uniq(r => fnOfPerson(r))),
+        facet("Grade", s.grades, uniq(r => r.grade)),
+        facet("Location", s.countries, uniq(r => r.country)),
+        facet("Career stage", s.bands, BAND_ORDER.length),
+        facet("Designation", s.roles, uniq(r => r.role)),
+        facet("Mentor", s.mentors, uniq(r => r.mentor)) ].filter(Boolean).join(" · ") || "the whole organisation";
+  const covered = VIEW.allow ? VIEW.allow.size : ROSTER.length;
+  const bits = [`You can see <b>${covered}</b> of ${ROSTER.length} people — ${esc(scopeTxt)}`];
+  const rules = [];
+  if (hideNames()) rules.push("names hidden");
+  if (hideRatings()) rules.push("ratings hidden");
+  if (minGroup() > 1) rules.push("groups under " + minGroup() + " hidden");
+  if (rules.length) bits.push(rules.join(", "));
+  return `<div style="background:var(--accent-tint);border:1px solid var(--accent-line);color:var(--ink);border-radius:12px;padding:10px 16px;font-size:12.5px;font-weight:600;margin:6px 0 14px">🔒 Scoped view, granted by HR${g.grantedBy ? " (" + esc(g.grantedBy) + ")" : ""}. ${bits.join(" · ")}.</div>`;
 }
 function anonBlockHTML(n) {
   return `<h1 class="page-title">EVP Insights</h1>
@@ -2633,6 +2646,9 @@ function applyAccessRow(row) {
     if (!g || !g.email) return;
     const email = String(g.email).toLowerCase();
     if (g.revoked) delete state.accessGrants[email]; else state.accessGrants[email] = g;
+    state.accessSyncAt = Date.now();
+    state.accessSyncCount = Object.keys(state.accessGrants).length;
+    save();                      // survive a reload even if the flow is down later
   } catch {}
 }
 
@@ -2793,6 +2809,13 @@ function newDraft(existing) {
            grantedBy: (whoAmI() || {}).name || "HR", grantedAt: Date.now() };
 }
 
+function accessSyncLine() {
+  const w = (state.taskWriteUrl || "").trim(), r = (state.taskReadUrl || "").trim();
+  if (!w || !r) return `<div class="md-sync"><span>⚠ Grants are saved on this device only — no sharing flow is connected, so nobody else will see them. Add both URLs under <a href="#" onclick="closeModal();openConnect();return false">Data settings</a>.</span></div>`;
+  return `<div class="md-sync"><span>Sharing is connected.${state.accessSyncAt ? ` Last read from the flow ${new Date(state.accessSyncAt).toLocaleString()} · ${state.accessSyncCount || 0} grant${state.accessSyncCount === 1 ? "" : "s"} came back.` : " Nothing has been read back from the flow yet — if a colleague can't see their access, check the read flow returns rows."}</span>
+    <button type="button" class="btn small" id="agSyncNow">Check now</button></div>`;
+}
+
 function renderAccessModal() {
   const root = document.getElementById("modalRoot");
   root.innerHTML = `<div class="modal-scrim" id="scrim"><div class="modal" style="max-width:940px">
@@ -2818,7 +2841,8 @@ function accessListHTML() {
     <p>Give any employee a scoped, read-only view of the live dashboard — pick who they can see (function, grade, designation, mentor cohort, or just their own team), which sections they get, and how strictly anonymity is enforced. HR admins always keep the full dashboard.</p>
     ${grants.length ? `<table class="data" style="margin:10px 0"><tr><th>Employee</th><th>Scope</th><th>Sections · anonymity</th><th></th></tr>${rows}</table>`
       : `<p style="color:var(--ink-faint)">No scoped access has been granted yet — only the ${ADMIN_EMAILS.length} HR admins can see the dashboard.</p>`}
-    <p style="font-size:11.5px;color:var(--ink-faint)">Grants are shared with other devices through the connected task flow. If no task flow is connected, a grant works only in browsers where this file has synced it.</p>
+    <p style="font-size:11.5px;color:var(--ink-faint)">This list shows every grant this browser knows about — the ones you made here plus any read back from the flow. A colleague only sees their access once their row is in the Excel <b>and</b> their browser has read it back.</p>
+    ${accessSyncLine()}
     <div class="modal-actions" style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
       <button class="btn ghost" onclick="openManageFunctions()">Manage functions</button>
       <span style="display:flex;gap:8px"><button class="btn" onclick="closeModal()">Close</button>
@@ -3395,6 +3419,9 @@ function topPerformersAtRisk() {
 function myMenteesSection() {
   const me = whoAmI();
   if (!me) return "";
+  /* Someone with a scoped grant sees the dashboard itself — the personal
+     mentor workspace would sit alongside it showing names their grant hides. */
+  if (myGrant() && !isAdmin()) return "";
   const mentees = ROSTER.filter(r => (r.mentorEmail || "").toLowerCase() === me.email);
   if (!mentees.length) return "";
   const submitted = mentees.filter(r => state.responses[r.email]);
@@ -3846,6 +3873,10 @@ if (!state.readUrl) { state.readUrl = DEFAULT_READ_URL; save(); }
    Baked in so a fresh browser is already wired; overridden by Data settings. */
 const DEFAULT_ACCESS_WRITE_URL = "https://defaultb9d69197ce1f49079545b307af2335.e9.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/15/workflows/201b70bce6a440aaac2da84472071ac4/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=X0_gCf4-7U_XnKrDAj6ffFLsTzJSCfEMPAMySCVQXYU";
 if (!state.taskWriteUrl) { state.taskWriteUrl = DEFAULT_ACCESS_WRITE_URL; save(); }
+
+/* …and the read flow that lists those rows back for everyone else. */
+const DEFAULT_ACCESS_READ_URL = "https://defaultb9d69197ce1f49079545b307af2335.e9.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/08/workflows/f4030ace865a4821a1d3cd561fc5101f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y5OwyHgwPqdtRxqF2GGQ1MexmRBPHNX3uHZ6hrFCkfk";
+if (!state.taskReadUrl) { state.taskReadUrl = DEFAULT_ACCESS_READ_URL; save(); }
 
 /* ---------------- header events + boot ---------------- */
 document.getElementById("btnSync").addEventListener("click", () => syncFromExcel({}));
