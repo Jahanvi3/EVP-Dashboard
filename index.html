@@ -398,6 +398,13 @@
   .pd-comments { max-height: 320px; overflow: auto; }
   @media (max-width: 760px) { .pd-kpis { grid-template-columns: 1fr 1fr; } }
 
+  .read-head {
+    display: flex; align-items: center; gap: 10px;
+    margin: 26px 0 12px; font-size: 11px; font-weight: 800; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .read-head::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
   /* ---------- three insight boards ---------- */
   .insight-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
   .insight-row.two { grid-template-columns: repeat(2, 1fr); }
@@ -1604,16 +1611,12 @@ function render() {
       <h2 class="section-title">The six pillars, side by side</h2>
       <p class="section-sub" style="margin-top:-8px">Click any pillar for the detailed view — what people liked, what they didn't, and every comment written about it.</p>
       <div class="card heat-wrap">${pillarTableHTML(st)}</div>
-    </section>`)}
-
-    ${gate("narrative", `<section class="section">
-      <div class="section-eyebrow">The strategist's read</div>
-      <h2 class="section-title">What this data is telling leadership</h2>
-      <p class="section-sub">The short version of everything below: what is going well, and what needs work.</p>
-      ${(() => { const b = buildInsightBoard(st); return `<div class="insight-row two">
-        ${insightBoxHTML("protect", "What's working", "Keep it going", b.good)}
-        ${insightBoxHTML("fix", "What needs improvement", "Worth your time", b.risk)}
-      </div>`; })()}
+      ${canView("narrative") ? (() => { const b = buildInsightBoard(st); return `
+        <div class="read-head">What this says</div>
+        <div class="insight-row two">
+          ${insightBoxHTML("protect", "What's working", "Keep it going", b.good)}
+          ${insightBoxHTML("fix", "What needs improvement", "Worth your time", b.risk)}
+        </div>`; })() : ""}
     </section>`)}
 
     ${gate("segments", `<section class="section">
@@ -2487,8 +2490,9 @@ function identify(emailRaw) {
   const email = String(emailRaw || "").trim().toLowerCase();
   if (!email.includes("@")) { flashNote("Enter your work email address."); return; }
   const r = ROSTER_BY_EMAIL[email];
-  if (!r && !ADMIN_EMAILS.includes(email)) { flashNote("That email isn't in the roster. Check the spelling, or contact HR."); return; }
-  state.me = { email, name: r ? r.name : email.split("@")[0] };
+  const granted = accessOf(email);
+  if (!r && !ADMIN_EMAILS.includes(email) && !granted) { flashNote("That email isn't in the roster and has no access granted. Check the spelling, or contact HR."); return; }
+  state.me = { email, name: r ? r.name : (granted && granted.name) || email.split("@")[0] };
   save(); render();
   flashNote(`Signed in as ${state.me.name}${isAdmin() ? " (HR admin)" : accessOf(email) ? " (scoped dashboard access)" : ""}.`);
   syncTasks({ silent: true });
@@ -2892,7 +2896,7 @@ function accessListHTML() {
   const rows = grants.map(g => {
     const s = grantSummary(g);
     return `<tr>
-      <td><b>${esc(g.name || g.email)}</b><br><span style="font-size:11.5px;color:var(--ink-faint)">${esc(g.email)}</span></td>
+      <td><b>${esc(g.name || g.email)}</b>${ROSTER_BY_EMAIL[g.email] ? "" : ` <span class="chip warn">not on roster</span>`}<br><span style="font-size:11.5px;color:var(--ink-faint)">${esc(g.email)}</span></td>
       <td>${esc(s.scope)}<br><span style="font-size:11.5px;color:var(--ink-faint)">${s.cover} of ${ROSTER.length} people</span></td>
       <td>${s.feats}/${ACCESS_FEATURES.length} sections<br><span style="font-size:11.5px;color:var(--ink-faint)">${esc(s.anon)}</span></td>
       <td style="white-space:nowrap;text-align:right">
@@ -2995,7 +2999,8 @@ function scopeChecklistsHTML(s) {
 function accessEditorHTML() {
   const d = accessDraft, s = d.scope, a = d.anonymity;
   const who = d.email
-    ? `<span class="chip active">${esc(d.name || d.email)} ✕</span>`
+    ? `<span class="chip active">${esc(d.name || d.email)}${d.outside ? " · not on roster" : ""} ✕</span>`
+      + (d.outside ? `<p class="pt-mut" style="margin:6px 0 0">Not in the employee sheet — they'll still get the scoped dashboard. "Their own team" won't work for them, so give them a filtered slice.</p>` : "")
     : `<input type="search" id="agWho" placeholder="Type a name or email from the roster…" autocomplete="off"
         style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;font-family:var(--body)">
        <div id="agWhoSuggest" style="max-height:150px;overflow:auto"></div>`;
@@ -3046,7 +3051,9 @@ function wireAccessEditor() {
     const c = el("agCoverage"); if (!c) return;
     const allow = grantAllowSet(d);
     const n = allow ? allow.size : ROSTER.length;
-    c.textContent = d.scope.type === "team" && !d.email
+    c.textContent = d.scope.type === "team" && d.email && d.outside
+      ? "This person isn't on the roster, so nobody maps to them as a mentor — pick a filtered slice instead."
+      : d.scope.type === "team" && !d.email
       ? "Pick the employee first — team scope depends on who they mentor."
       : `This grant covers ${n} of ${ROSTER.length} employees` + (d.scope.type === "team" && d.email && n === 0 ? " — no one maps to them as mentor." : ".");
   };
@@ -3057,12 +3064,22 @@ function wireAccessEditor() {
       const q = who.value.toLowerCase().trim();
       if (!q) { sug.innerHTML = ""; return; }
       const m = ROSTER.filter(r => r.name.toLowerCase().includes(q) || r.email.includes(q)).slice(0, 8);
-      sug.innerHTML = m.map(r => `<div class="sg" data-email="${r.email}" style="cursor:pointer;padding:6px 8px;border-radius:8px"><b>${esc(r.name)}</b> <span style="font-size:11.5px;color:var(--ink-faint)">${esc(r.role)} · ${esc(r.email)}</span></div>`).join("");
+      /* Someone outside the roster — a new joiner not yet in the HR sheet, a
+         consultant, a leader on a different domain — can still be granted
+         access by typing their full email address. */
+      const typed = who.value.trim();
+      const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(typed);
+      const known = isEmail && ROSTER_BY_EMAIL[typed.toLowerCase()];
+      const guessName = typed.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      sug.innerHTML = m.map(r => `<div class="sg" data-email="${r.email}" data-name="${esc(r.name)}" style="cursor:pointer;padding:6px 8px;border-radius:8px"><b>${esc(r.name)}</b> <span style="font-size:11.5px;color:var(--ink-faint)">${esc(r.role)} · ${esc(r.email)}</span></div>`).join("")
+        + (isEmail && !known ? `<div class="sg" data-email="${esc(typed.toLowerCase())}" data-name="${esc(guessName)}" data-outside="1" style="cursor:pointer;padding:6px 8px;border-radius:8px;border-top:1px solid var(--line-soft)"><b>${esc(guessName)}</b> <span style="font-size:11.5px;color:var(--ink-faint)">${esc(typed.toLowerCase())} · not on the roster — grant anyway</span></div>` : "")
+        + (!m.length && !isEmail ? `<div style="padding:8px;font-size:12px;color:var(--ink-faint)">No one matches. Type a full email address to grant access to someone outside the roster.</div>` : "");
       sug.querySelectorAll("[data-email]").forEach(x => x.addEventListener("mousedown", () => {
         const r = ROSTER_BY_EMAIL[x.dataset.email];
-        d.email = r.email; d.name = r.name;
-        document.getElementById("agWhoWrap").innerHTML = `<span class="chip active" id="agClearWho" style="cursor:pointer">${esc(r.name)} ✕</span>`;
-        document.getElementById("agClearWho").onclick = () => { d.email = ""; d.name = ""; renderAccessModal(); };
+        d.email = x.dataset.email; d.name = (r && r.name) || x.dataset.name || x.dataset.email;
+        d.outside = !r;
+        document.getElementById("agWhoWrap").innerHTML = `<span class="chip active" id="agClearWho" style="cursor:pointer">${esc(d.name)}${d.outside ? " · not on roster" : ""} ✕</span>`;
+        document.getElementById("agClearWho").onclick = () => { d.email = ""; d.name = ""; d.outside = false; renderAccessModal(); };
         coverage();
       }));
     });
