@@ -1433,6 +1433,23 @@ function loginScreen() {
     </div>`;
 }
 
+/* Shown to someone who has no grant yet: did we manage to ask, and what came
+   back? Without this a failed fetch looks identical to "HR hasn't granted me". */
+function accessCheckHTML() {
+  if (!state.taskReadUrl) return "";
+  const err = state.accessSyncError;
+  const rows = state.accessRowsRead || 0;
+  if (err) {
+    return `<div class="md-sync" style="background:var(--flag-tint);border-color:var(--flag-line);color:var(--flag-ink)">
+      <span>⚠ Couldn't check whether HR has given you dashboard access — ${esc(String(err).slice(0, 180))}.
+      Your mentee view below still works. Show this message to the HR team.</span>
+      <button type="button" class="btn small" onclick="syncTasks({});">Try again</button></div>`;
+  }
+  if (!state.accessSyncTried) return "";
+  return `<div class="md-sync"><span>Checked with HR for dashboard access — ${rows ? `${rows} record${rows === 1 ? "" : "s"} read, none of them for you` : "nothing granted to you yet"}. If you were expecting access, ask HR to re-save your grant.</span>
+    <button type="button" class="btn small" onclick="syncTasks({});">Check again</button></div>`;
+}
+
 function renderRestricted() {
   const app = document.getElementById("app");
   const me = whoAmI();
@@ -1441,6 +1458,7 @@ function renderRestricted() {
   app.innerHTML = `
     <h1 class="page-title">Hello, ${esc(me.name.split(" ")[0])}</h1>
     <p class="page-lede">${mentees.length ? `Your cohort of ${mentees.length} mentee${mentees.length > 1 ? "s" : ""} and ` : ""}${myOpen ? `${myOpen} open task${myOpen > 1 ? "s" : ""} assigned to you.` : "everything assigned to you, in one place."}</p>
+    ${accessCheckHTML()}
     ${myTasksSection(true)}
     ${myMenteesSection()}
     ${!mentees.length && !state.tasks.some(t => (t.assigneeEmail || "").toLowerCase() === me.email) ? `
@@ -2439,9 +2457,18 @@ async function syncTasks(opts) {
     if (!bodyText.trim()) throw new Error("empty reply — the task read flow is missing its Response action or the Body is blank.");
     let payload; try { payload = JSON.parse(bodyText); } catch { throw new Error("task flow reply isn't valid JSON: \"" + bodyText.slice(0, 100) + "…\""); }
     mergeRemoteTasks(payload);
+    state.accessSyncError = "";
+    state.accessSyncTried = Date.now();
+    save();
     if (!opts.noRender) render();
   } catch (err) {
-    if (!opts.silent) flashNote("Task sync failed: " + err.message);
+    /* Never swallow this: a person waiting on a grant sees nothing at all
+       otherwise, and the admin has no way to tell why. */
+    state.accessSyncError = err.message || String(err);
+    state.accessSyncTried = Date.now();
+    save();
+    if (!opts.silent) flashNote("Access sync failed: " + err.message);
+    if (!opts.noRender) render();
   }
 }
 
@@ -2836,6 +2863,13 @@ function accessSyncLine() {
   if (!w || !r) return `<div class="md-sync"><span>⚠ Grants are saved on this device only — no sharing flow is connected, so nobody else will see them. Add both URLs under <a href="#" onclick="closeModal();openConnect();return false">Data settings</a>.</span></div>`;
   const read = state.accessRowsRead;
   const mismatch = read > 0 && !state.accessSyncAt;
+  if (state.accessSyncError) {
+    return `<div class="md-sync" style="background:var(--flag-tint);border-color:var(--flag-line);color:var(--flag-ink)">
+      <span>⚠ The read flow could not be reached from this browser — ${esc(String(state.accessSyncError).slice(0, 200))}.
+      Until it responds, nobody else will see their access. Check the read flow's Response has
+      <code>Access-Control-Allow-Origin: *</code>.</span>
+      <button type="button" class="btn small" id="agSyncNow">Try again</button></div>`;
+  }
   return `<div class="md-sync"><span>Sharing is connected.${state.accessSyncAt
       ? ` Last read from the flow ${new Date(state.accessSyncAt).toLocaleString()} · ${state.accessSyncCount || 0} grant${state.accessSyncCount === 1 ? "" : "s"} came back${read ? ` from ${read} row${read === 1 ? "" : "s"}` : ""}.`
       : mismatch
