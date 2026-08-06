@@ -2352,7 +2352,8 @@ function openConnect() {
     const ru = document.getElementById("rosterUrlInput");
     if (ru) state.rosterUrl = ru.value.trim();
     const ou = document.getElementById("otpUrlInput");
-    if (ou) state.otpUrl = ou.value.trim();
+    if (ou) { state.otpUrl = ou.value.trim(); state.otpUrlCustom = state.otpUrl !== DEFAULT_OTP_URL; }
+    state.accessUrlCustom = state.taskWriteUrl !== DEFAULT_ACCESS_WRITE_URL || state.taskReadUrl !== DEFAULT_ACCESS_READ_URL;
     save(); };
   document.getElementById("btnSaveUrl").onclick = () => { grab(); close(); flashNote("Sync link saved."); };
   document.getElementById("btnSaveSync").onclick = () => { grab(); close(); syncFromExcel({}); };
@@ -2525,6 +2526,7 @@ async function otpSend(email, name) {
     });
     if (!res.ok) throw new Error("the flow returned status " + res.status);
     otpState.sent = true;
+    otpState.status = res.status;
   } catch (err) {
     otpState.error = err.message || String(err);
   }
@@ -2558,8 +2560,9 @@ function otpScreen() {
       <div class="card" style="display:grid;gap:12px;text-align:left">
         <input type="text" id="otpCode" inputmode="numeric" maxlength="4" autocomplete="one-time-code" placeholder="0000"
           style="border:1px solid var(--line);border-radius:12px;padding:14px;font-size:32px;letter-spacing:.5em;text-align:center;font-family:var(--display);font-weight:600">
-        ${o.error ? `<p style="margin:0;font-size:12.5px;color:var(--flag-ink);font-weight:700">${esc(o.error)}</p>` : ""}
+        ${o.error ? `<p style="margin:0;font-size:12.5px;color:var(--flag-ink);font-weight:700">⚠ Couldn't send the code — ${esc(o.error)}. Tell HR; they can check the sign-in flow.</p>` : ""}
         ${!o.sent && !o.error ? `<p style="margin:0;font-size:12.5px;color:var(--ink-faint)">Sending…</p>` : ""}
+        ${o.sent && !o.error ? `<p style="margin:0;font-size:12.5px;color:var(--ok-ink);font-weight:700">✓ Code sent. It can take a minute to arrive — check junk mail too.</p>` : ""}
         <button class="btn primary" id="otpGo" style="padding:11px">Verify and sign in</button>
         <div style="display:flex;justify-content:space-between;font-size:12px">
           <button type="button" class="lnk" id="otpResend">Send a new code</button>
@@ -4060,7 +4063,14 @@ if (!state.taskReadUrl) { state.taskReadUrl = DEFAULT_ACCESS_READ_URL; save(); }
 
 /* Sign-in codes: the flow that emails a 4-digit code to whoever is signing in. */
 const DEFAULT_OTP_URL = "https://defaultb9d69197ce1f49079545b307af2335.e9.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/00/workflows/246c3c2158434c18b6fd50f32a881144/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mPBjUIG-UaR5mYi9--TDuQGc8x94WEEu55SMCgVk6yA";
-if (!state.otpUrl) { state.otpUrl = DEFAULT_OTP_URL; save(); }
+/* A browser that used an earlier build has these saved in localStorage, so a
+   blank or outdated value would quietly shadow the built-in one. Unless the
+   admin typed their own in Data settings, the built-in always wins. */
+if (!state.otpUrlCustom && state.otpUrl !== DEFAULT_OTP_URL) { state.otpUrl = DEFAULT_OTP_URL; save(); }
+if (!state.accessUrlCustom) {
+  if (state.taskWriteUrl !== DEFAULT_ACCESS_WRITE_URL) { state.taskWriteUrl = DEFAULT_ACCESS_WRITE_URL; save(); }
+  if (state.taskReadUrl !== DEFAULT_ACCESS_READ_URL) { state.taskReadUrl = DEFAULT_ACCESS_READ_URL; save(); }
+}
 
 /* ---------------- header events + boot ---------------- */
 document.getElementById("btnSync").addEventListener("click", () => syncFromExcel({}));
