@@ -1436,7 +1436,7 @@ function loginScreen() {
           style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;font-family:var(--body)">
         <button class="btn primary" id="meGo" style="padding:11px">Continue</button>
       </div>
-      <p style="font-size:11.5px;color:var(--ink-faint);margin-top:14px">Access is matched against the employee roster.</p>
+      <p style="font-size:11.5px;color:var(--ink-faint);margin-top:14px">${otpEnabled() ? "We'll email you a 4-digit code to confirm it's you." : "Access is matched against the employee roster."}</p>
     </div>`;
 }
 
@@ -1523,7 +1523,10 @@ function render() {
   computeView();
   setHeaderMode();
   const app = document.getElementById("app");
-  if (!whoAmI()) { app.innerHTML = loginScreen(); wireMyTasks(); return; }
+  if (!whoAmI()) {
+    if (otpState) { app.innerHTML = otpScreen(); wireOtp(); return; }
+    app.innerHTML = loginScreen(); wireMyTasks(); return;
+  }
   if (!isAdmin() && !myGrant()) { renderRestricted(); return; }
   const subs = Object.values(state.responses);
   if (!subs.length && VIEW) {
@@ -2312,6 +2315,10 @@ function openConnect() {
       <b>Read flow:</b> HTTP <b>GET</b> trigger → <b>List rows present in a table</b> (AccessRows, Top Count 5000) → Response body: the <i>value</i> output.<br>
       <b>Response headers (both):</b> <code>Content-Type: application/json</code> and <code>Access-Control-Allow-Origin: *</code> — without the second one the browser blocks the reply.
     </p>
+    <p style="margin:16px 0 6px"><b>Sign-in code by email (optional)</b> — a POST flow that receives <code>{email, name, code}</code> and sends the person a 4-digit code. Leave it blank and sign-in stays email-only.</p>
+    <p style="margin-bottom:6px"><b>Sign-in code URL (POST)</b></p>
+    <input type="url" id="otpUrlInput" placeholder="https://prod-….logic.azure.com/…/invoke?…" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;font-family:ui-monospace,monospace;color:var(--ink)" value="${esc(state.otpUrl || "")}">
+
     <p style="margin-bottom:6px"><b>Access write URL (POST)</b></p>
     <input type="url" id="taskWriteInput" placeholder="https://prod-….logic.azure.com/…/invoke?…" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;font-family:ui-monospace,monospace;color:var(--ink)" value="${esc(state.taskWriteUrl || "")}">
     <p style="margin:10px 0 6px"><b>Access read URL (GET)</b></p>
@@ -2344,6 +2351,8 @@ function openConnect() {
     state.taskReadUrl = document.getElementById("taskReadInput").value.trim();
     const ru = document.getElementById("rosterUrlInput");
     if (ru) state.rosterUrl = ru.value.trim();
+    const ou = document.getElementById("otpUrlInput");
+    if (ou) state.otpUrl = ou.value.trim();
     save(); };
   document.getElementById("btnSaveUrl").onclick = () => { grab(); close(); flashNote("Sync link saved."); };
   document.getElementById("btnSaveSync").onclick = () => { grab(); close(); syncFromExcel({}); };
@@ -2486,16 +2495,108 @@ const ADMIN_EMAILS = [
 ];
 function whoAmI() { return state.me && state.me.email ? state.me : null; }
 function isAdmin() { const me = whoAmI(); return !!me && ADMIN_EMAILS.includes(me.email); }
+/* ============================================================
+   One-time code sign-in
+   The dashboard has no server, so the code is generated here and emailed
+   through a Power Automate flow. That proves the person can read the mailbox,
+   which is the point — but it is a doorstep, not a lock: anyone who can open
+   dev tools can bypass it, exactly like the email-only sign-in it replaces.
+   Real protection needs SSO in front of the file.
+   ============================================================ */
+let otpState = null;   // { email, name, code, sentAt, tries }
+const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_TRUST_MS = 30 * 24 * 60 * 60 * 1000;
+
+function otpEnabled() { return !!(state.otpUrl || "").trim(); }
+function otpTrusted(email) {
+  const t = (state.otpTrust || {})[String(email || "").toLowerCase()];
+  return !!t && (Date.now() - t) < OTP_TRUST_MS;
+}
+function otpNewCode() { return String(Math.floor(1000 + Math.random() * 9000)); }
+
+async function otpSend(email, name) {
+  const code = otpNewCode();
+  otpState = { email, name, code, sentAt: Date.now(), tries: 0 };
+  render();
+  try {
+    const res = await fetch(state.otpUrl.trim(), {
+      method: "POST", headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ email, name, code, at: Date.now() }),
+    });
+    if (!res.ok) throw new Error("the flow returned status " + res.status);
+    otpState.sent = true;
+  } catch (err) {
+    otpState.error = err.message || String(err);
+  }
+  render();
+}
+
+function otpVerify(entered) {
+  if (!otpState) return;
+  const code = String(entered || "").replace(/\D/g, "");
+  if (Date.now() - otpState.sentAt > OTP_TTL_MS) { otpState.error = "That code has expired — send a new one."; render(); return; }
+  if (code !== otpState.code) {
+    otpState.tries++;
+    otpState.error = otpState.tries >= 5 ? "Too many attempts. Start again." : "That code doesn't match. " + (5 - otpState.tries) + " attempts left.";
+    if (otpState.tries >= 5) otpState = null;
+    render(); return;
+  }
+  const { email, name } = otpState;
+  otpState = null;
+  state.otpTrust = Object.assign({}, state.otpTrust, { [email]: Date.now() });
+  signInAs(email, name);
+}
+
+function otpScreen() {
+  const o = otpState;
+  const masked = o.email.replace(/^(.{2}).*(@.*)$/, (m, a, b) => a + "•••" + b);
+  return `
+    <div style="max-width:420px;margin:8vh auto 0;text-align:center">
+      <div class="brand-mark" style="margin:0 auto 14px;width:44px;height:44px;font-size:20px;border-radius:12px">A</div>
+      <h1 class="page-title" style="font-size:26px">Check your email</h1>
+      <p class="page-lede" style="margin:0 auto 20px">We sent a 4-digit code to <b>${esc(masked)}</b>. It expires in 10 minutes.</p>
+      <div class="card" style="display:grid;gap:12px;text-align:left">
+        <input type="text" id="otpCode" inputmode="numeric" maxlength="4" autocomplete="one-time-code" placeholder="0000"
+          style="border:1px solid var(--line);border-radius:12px;padding:14px;font-size:32px;letter-spacing:.5em;text-align:center;font-family:var(--display);font-weight:600">
+        ${o.error ? `<p style="margin:0;font-size:12.5px;color:var(--flag-ink);font-weight:700">${esc(o.error)}</p>` : ""}
+        ${!o.sent && !o.error ? `<p style="margin:0;font-size:12.5px;color:var(--ink-faint)">Sending…</p>` : ""}
+        <button class="btn primary" id="otpGo" style="padding:11px">Verify and sign in</button>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <button type="button" class="lnk" id="otpResend">Send a new code</button>
+          <button type="button" class="lnk" id="otpBack">Use a different email</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function wireOtp() {
+  const el = id => document.getElementById(id);
+  const inp = el("otpCode");
+  if (!inp) return;
+  inp.focus();
+  inp.addEventListener("input", () => { if (inp.value.replace(/\D/g, "").length === 4) otpVerify(inp.value); });
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") otpVerify(inp.value); });
+  if (el("otpGo")) el("otpGo").onclick = () => otpVerify(inp.value);
+  if (el("otpResend")) el("otpResend").onclick = () => otpSend(otpState.email, otpState.name);
+  if (el("otpBack")) el("otpBack").onclick = () => { otpState = null; render(); };
+}
+
+function signInAs(email, name) {
+  state.me = { email, name };
+  save(); render();
+  flashNote(`Signed in as ${name}${isAdmin() ? " (HR admin)" : accessOf(email) ? " (scoped dashboard access)" : ""}.`);
+  syncTasks({ silent: true });
+}
+
 function identify(emailRaw) {
   const email = String(emailRaw || "").trim().toLowerCase();
   if (!email.includes("@")) { flashNote("Enter your work email address."); return; }
   const r = ROSTER_BY_EMAIL[email];
   const granted = accessOf(email);
   if (!r && !ADMIN_EMAILS.includes(email) && !granted) { flashNote("That email isn't in the roster and has no access granted. Check the spelling, or contact HR."); return; }
-  state.me = { email, name: r ? r.name : (granted && granted.name) || email.split("@")[0] };
-  save(); render();
-  flashNote(`Signed in as ${state.me.name}${isAdmin() ? " (HR admin)" : accessOf(email) ? " (scoped dashboard access)" : ""}.`);
-  syncTasks({ silent: true });
+  const name = r ? r.name : (granted && granted.name) || email.split("@")[0];
+  if (otpEnabled() && !otpTrusted(email)) { otpSend(email, name); return; }
+  signInAs(email, name);
 }
 function signOut() { state.me = null; save(); render(); window.scrollTo(0, 0); }
 
