@@ -4058,6 +4058,10 @@ if (!state.taskWriteUrl) { state.taskWriteUrl = DEFAULT_ACCESS_WRITE_URL; save()
 const DEFAULT_ACCESS_READ_URL = "https://defaultb9d69197ce1f49079545b307af2335.e9.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/08/workflows/f4030ace865a4821a1d3cd561fc5101f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y5OwyHgwPqdtRxqF2GGQ1MexmRBPHNX3uHZ6hrFCkfk";
 if (!state.taskReadUrl) { state.taskReadUrl = DEFAULT_ACCESS_READ_URL; save(); }
 
+/* Sign-in codes: the flow that emails a 4-digit code to whoever is signing in. */
+const DEFAULT_OTP_URL = "https://defaultb9d69197ce1f49079545b307af2335.e9.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/00/workflows/246c3c2158434c18b6fd50f32a881144/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=mPBjUIG-UaR5mYi9--TDuQGc8x94WEEu55SMCgVk6yA";
+if (!state.otpUrl) { state.otpUrl = DEFAULT_OTP_URL; save(); }
+
 /* ---------------- header events + boot ---------------- */
 document.getElementById("btnSync").addEventListener("click", () => syncFromExcel({}));
 document.getElementById("btnPrint").addEventListener("click", () => window.print());
